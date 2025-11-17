@@ -62,12 +62,24 @@
     /* Added padding for the new bag */
     padding: 40px;
   }
+  .zoom-controls{
+    margin-top:8px;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    gap:8px;
+    font-size:12px;
+    color:var(--muted);
+  }
+  .zoom-percent{ min-width:48px; text-align:center; }
+  .zoom-btn{ padding:6px 10px; font-size:12px; }
   .error{ color:var(--err); font-size:12px; min-height:1.2em }
   .mono{ font-family:ui-monospace,Consolas,monospace }
   
   /* Original SVG text styles, still needed for the SVG overlay */
   .labelText{ font:700 10px/1 Inter,Arial; fill:#111 }
-  .labelText.outline{ fill:none; stroke:#111; stroke-width:1.4 }
+  /* Make 'outline' style visually identical (no shadow/bold effect) */
+  .labelText.outline{ fill:#111; stroke:none; stroke-width:0 }
   
   small.hint{ color:var(--muted); display:block; margin-top:6px }
   
@@ -226,7 +238,7 @@
 
   <div class="actions">
     <button id="generate" class="primary">Generate</button>
-    <button id="dlPng">Download PNG (Full Bag)</button>
+    <button id="dlPng">Download PNG</button>
   </div>
 </aside>
 
@@ -277,6 +289,11 @@
     <!-- END: NEW CSS BLOOD BAG HTML -->
 
   </div>
+  <div class="zoom-controls">
+    <button id="zoomOut" type="button" class="zoom-btn">◀</button>
+    <span id="zoomPercent" class="zoom-percent">100%</span>
+    <button id="zoomIn" type="button" class="zoom-btn">▶</button>
+  </div>
 </main>
 
 <canvas id="scratch" style="display:none"></canvas>
@@ -285,62 +302,7 @@
 /* ====================== SPN223 Appendix 4 Catalogue (Free) ====================== */
 /* Free version exposes only a single core product */
 const CATALOGUE_FULL = [
-  // --- Core red cell products (free tier) ---
-  { name: "Red Cells in Additive Solution, LD",                                    barcode: "a0043333b", fluid: "red" },
-  { name: "Fresh Frozen Plasma, LD — Pack 1",                                     barcode: "a0183213b", fluid: "yellow" },
-  { name: "Fresh Frozen Plasma, LD — Pack 2",                                     barcode: "a0183223b", fluid: "yellow" },
-  // --- Cryoprecipitate, pooled ---
-  { name: "Cryoprecipitate, Pooled, LD",                                          barcode: "a0101903b", fluid: "yellow" },
-  // --- Red cells for special use (IUT / neonatal / exchange) ---
-  { name: "Red Cells, CPD, LD, Irradiated, for Intrauterine Transfusion",         barcode: "a0400183b", fluid: "red" },
-  { name: "Red Cells in Additive Solution, LD for Neonatal Use — Pack 1",         barcode: "a0568303b", fluid: "red" },
-  { name: "Red Cells in Additive Solution, LD for Neonatal Use — Pack 2",         barcode: "a0568313b", fluid: "red" },
-  { name: "Red Cells in Additive Solution, LD for Neonatal Use — Pack 3",         barcode: "a0568323b", fluid: "red" },
-  { name: "Red Cells in Additive Solution, LD for Neonatal Use — Pack 4",         barcode: "a0568333b", fluid: "red" },
-  { name: "Red Cells in Additive Solution, LD for Neonatal Use — Pack 5",         barcode: "a0568343b", fluid: "red" },
-  { name: "Red Cells in Additive Solution, LD for Neonatal Use — Pack 6",         barcode: "a0568353b", fluid: "red" },
-  { name: "Red Cells in Additive Solution, LD, Irradiated, for Neonatal Use — Pack 1", barcode: "a0468303b", fluid: "red" },
-  { name: "Red Cells in Additive Solution, LD, Irradiated, for Neonatal Use — Pack 2", barcode: "a0468313b", fluid: "red" },
-  { name: "Red Cells in Additive Solution, LD, Irradiated, for Neonatal Use — Pack 3", barcode: "a0468323b", fluid: "red" },
-  { name: "Red Cells in Additive Solution, LD, Irradiated, for Neonatal Use — Pack 4", barcode: "a0468333b", fluid: "red" },
-  { name: "Red Cells in Additive Solution, LD, Irradiated, for Neonatal Use — Pack 5", barcode: "a0468343b", fluid: "red" },
-  { name: "Red Cells in Additive Solution, LD, Irradiated, for Neonatal Use — Pack 6", barcode: "a0468353b", fluid: "red" },
-  { name: "Red Cells (CPD), LD, Irradiated for Exchange Transfusion",             barcode: "a0403503b", fluid: "red" },
-  { name: "Red Cells in Additive Solution, LD for Neonates and Infants",          barcode: "a0544813b", fluid: "red" },
-  { name: "Red Cells in Additive Solution, LD, Irradiated for Neonates and Infants", barcode: "a0544823b", fluid: "red" },
-  // --- Platelets / plasma / cryo for neonatal & infant use ---
-  { name: "Platelets, Hyperconcentrated, Irradiated, for Neonatal Use",          barcode: "a0429643b", fluid: "yellow" },
-  { name: "Platelets in Plasma and Additive Solution, LD for Neonatal Use — Pack 1", barcode: "a0300313b", fluid: "yellow" },
-  { name: "Platelets in Plasma and Additive Solution, LD for Neonatal Use — Pack 2", barcode: "A0300323b", fluid: "yellow" },
-  { name: "Platelets in Plasma and Additive Solution, LD for Neonatal Use — Pack 3", barcode: "A0300333b", fluid: "yellow" },
-  { name: "Platelets in Plasma and Additive Solution, LD for Neonatal Use — Pack 4", barcode: "A0300343b", fluid: "yellow" },
-  { name: "Platelets in Plasma and Additive Solution, LD for Neonatal Use — Pack 5", barcode: "A0300353b", fluid: "yellow" },
-  { name: "Platelets in Plasma and Additive Solution, LD for Neonatal Use — Pack 6", barcode: "A0300363b", fluid: "yellow" },
-  { name: "Platelets in Plasma and Additive Solution, LD for Neonatal Use — Pack 7", barcode: "A0300373b", fluid: "yellow" },
-  { name: "Platelets in Plasma and Additive Solution, LD for Neonatal Use — Pack 8", barcode: "A0300383b", fluid: "yellow" },
-  { name: "Platelets in Plasma and Additive Solution, LD Irradiated, for Neonatal Use — Pack 1", barcode: "A0300513b", fluid: "yellow" },
-  { name: "Platelets in Plasma and Additive Solution, LD Irradiated, for Neonatal Use — Pack 2", barcode: "A0300523b", fluid: "yellow" },
-  { name: "Platelets in Plasma and Additive Solution, LD Irradiated, for Neonatal Use — Pack 3", barcode: "A0300533b", fluid: "yellow" },
-  { name: "Platelets in Plasma and Additive Solution, LD Irradiated, for Neonatal Use — Pack 4", barcode: "A0300543b", fluid: "yellow" },
-  { name: "Platelets in Plasma and Additive Solution, LD Irradiated, for Neonatal Use — Pack 5", barcode: "A0300553b", fluid: "yellow" },
-  { name: "Platelets in Plasma and Additive Solution, LD Irradiated, for Neonatal Use — Pack 6", barcode: "A0300563b", fluid: "yellow" },
-  { name: "Platelets in Plasma and Additive Solution, LD Irradiated, for Neonatal Use — Pack 7", barcode: "A0300573b", fluid: "yellow" },
-  { name: "Platelets in Plasma and Additive Solution, LD Irradiated, for Neonatal Use — Pack 8", barcode: "A0300583b", fluid: "yellow" },
-  { name: "Fresh Frozen Plasma, LD for Neonatal Use — Pack 1",                   barcode: "A0696013b", fluid: "yellow" },
-  { name: "Fresh Frozen Plasma, LD for Neonatal Use — Pack 2",                   barcode: "A0696023b", fluid: "yellow" },
-  { name: "Fresh Frozen Plasma, LD for Neonatal Use — Pack 3",                   barcode: "A0696033b", fluid: "yellow" },
-  { name: "Fresh Frozen Plasma, LD for Neonatal Use — Pack 4",                   barcode: "A0696043b", fluid: "yellow" },
-  { name: "Fresh Frozen Plasma, LD for Neonatal Use — Pack 5",                   barcode: "A0597113b", fluid: "yellow" },
-  { name: "Fresh Frozen Plasma, LD for Neonatal Use — Pack 6",                   barcode: "A0597123b", fluid: "yellow" },
-  { name: "Fresh Frozen Plasma, LD for Neonatal Use — Pack 7",                   barcode: "A0597133b", fluid: "yellow" },
-  { name: "Fresh Frozen Plasma, LD for Neonatal Use — Pack 8",                   barcode: "A0597143b", fluid: "yellow" },
-  { name: "Fresh Frozen Plasma, LD for Neonatal Use — Pack 9",                   barcode: "A0597153b", fluid: "yellow" },
-  { name: "Fresh Frozen Plasma, LD for Neonatal Use — Pack 10",                  barcode: "A0597163b", fluid: "yellow" },
-  { name: "Fresh Frozen Plasma, LD for Neonatal Use — Pack 11",                  barcode: "A0597173b", fluid: "yellow" },
-  { name: "Fresh Frozen Plasma, LD for Neonatal Use — Pack 12",                  barcode: "A0597183b", fluid: "yellow" },
-  { name: "Cryoprecipitate, LD for Neonatal Use",                                barcode: "A0299813b", fluid: "yellow" },
-  // --- Granulocytes ---
-  { name: "Granulocytes, Pooled, in Additive Solution/Plasma Mix, Irradiated",   barcode: "a0543953b", fluid: "yellow" },
+  { name: "Red Cells in Additive Solution, LD", barcode: "a0043333b", fluid: "red" },
 ];
 
 /* ====================== ISO/IEC 7064 MOD 37-2 ====================== */
@@ -352,8 +314,9 @@ function charVal(c){
   return null;
 }
 function valToChar(v){
-  return v < 10 ? String.fromCharCode(48 + v)
-                : String.fromCharCode(55 + v); // 10 -> 'A'
+  if (v === 36) return "*"; // Handle the asterisk case
+  return v < 10 ? String.fromCharCode(48 + v)   // 0-9
+                : String.fromCharCode(55 + v);  // 10-35 (A-Z)
 }
 function iso7064(str){
   str = (str || "").replace(/\s+/g, "").toUpperCase();
@@ -369,9 +332,9 @@ function iso7064(str){
   return { ok:true, chk:valToChar(checkVal) };
 }
 function flagDigits(ch){
-  const v = charVal(ch);
-  const s = String(v);
-  return s.length === 1 ? "0" + s : s;
+  const v = charVal(ch); // e.g., 'G' -> 16
+  const flagValue = v + 60; // e.g., 16 + 60 = 76
+  return String(flagValue); // Returns "76"
 }
 
 /* ====================== Date helpers ====================== */
@@ -572,14 +535,14 @@ function generate(){
     return;
   }
   let base = raw;
-  if(raw.length >= 2){
-    const prefix = raw.slice(0, -1);
-    const last   = raw.slice(-1);
-    const chk1 = iso7064(prefix);
-    if(chk1.ok && chk1.chk === last){
-      base = prefix;
-    }
-  }
+  // if(raw.length >= 2){
+  //   const prefix = raw.slice(0, -1);
+  //   const last   = raw.slice(-1);
+  //   const chk1 = iso7064(prefix);
+  //   if(chk1.ok && chk1.chk === last){
+  //     base = prefix;
+  //   }
+  // }
   const chk = iso7064(base);
   if(!chk.ok){
     $("donation-error").textContent = chk.err;
@@ -593,7 +556,7 @@ function generate(){
   const bSel   = $("blood");
   const bText  = bSel.selectedOptions[0].dataset.text;
   const bStyle = bSel.selectedOptions[0].dataset.style;
-  const bloodPayload = "%" + bSel.value;
+  const bloodPayload = "=%" + bSel.value;
 
   // Expiry (UNCHANGED)
   let d = null;
@@ -743,8 +706,45 @@ function downloadPNG(){
   img.src = url;
 }
 
+/* ====================== Preview Zoom ====================== */
+let previewZoom = 1;
+const ZOOM_MIN = 0.5;
+const ZOOM_MAX = 2.0;
+const ZOOM_STEP = 0.25;
+
+function applyZoom(){
+  const wrapper = document.querySelector(".blood-bag-wrapper");
+  const pct = $("zoomPercent");
+  if(!wrapper) return;
+  wrapper.style.transformOrigin = "center center";
+  wrapper.style.transform = `scale(${previewZoom})`;
+  if(pct) pct.textContent = Math.round(previewZoom * 100) + "%";
+}
+
+function setZoom(value){
+  previewZoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, value));
+  applyZoom();
+}
+
+function initZoomControls(){
+  applyZoom();
+  const zoomInBtn = $("zoomIn");
+  const zoomOutBtn = $("zoomOut");
+  const shell = document.querySelector(".preview-shell");
+  if(zoomInBtn) zoomInBtn.onclick = () => setZoom(previewZoom + ZOOM_STEP);
+  if(zoomOutBtn) zoomOutBtn.onclick = () => setZoom(previewZoom - ZOOM_STEP);
+  if(shell){
+    shell.addEventListener("click", e => {
+      if(!e.target.closest(".blood-bag-wrapper")) return;
+      if(previewZoom < ZOOM_MAX) setZoom(previewZoom + ZOOM_STEP);
+      else setZoom(1);
+    });
+  }
+}
+
 /* Initial setup */
 populateProducts();
+initZoomControls();
 
 // Optional: pre-fill example donation & date
 $("donation").value = "G072425123456";

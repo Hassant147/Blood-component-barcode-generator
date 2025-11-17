@@ -62,12 +62,24 @@
     /* Added padding for the new bag */
     padding: 40px;
   }
+  .zoom-controls{
+    margin-top:8px;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    gap:8px;
+    font-size:12px;
+    color:var(--muted);
+  }
+  .zoom-percent{ min-width:48px; text-align:center; }
+  .zoom-btn{ padding:6px 10px; font-size:12px; }
   .error{ color:var(--err); font-size:12px; min-height:1.2em }
   .mono{ font-family:ui-monospace,Consolas,monospace }
   
   /* Original SVG text styles, still needed for the SVG overlay */
   .labelText{ font:700 10px/1 Inter,Arial; fill:#111 }
-  .labelText.outline{ fill:none; stroke:#111; stroke-width:1.4 }
+  /* Make 'outline' style visually identical (no shadow/bold effect) */
+  .labelText.outline{ fill:#111; stroke:none; stroke-width:0 }
   
   small.hint{ color:var(--muted); display:block; margin-top:6px }
   
@@ -226,7 +238,7 @@
 
   <div class="actions">
     <button id="generate" class="primary">Generate</button>
-    <button id="dlPng">Download PNG (Full Bag)</button>
+    <button id="dlPng">Download PNG</button>
   </div>
 </aside>
 
@@ -276,6 +288,11 @@
     </div>
     <!-- END: NEW CSS BLOOD BAG HTML -->
 
+  </div>
+  <div class="zoom-controls">
+    <button id="zoomOut" type="button" class="zoom-btn">◀</button>
+    <span id="zoomPercent" class="zoom-percent">100%</span>
+    <button id="zoomIn" type="button" class="zoom-btn">▶</button>
   </div>
 </main>
 
@@ -383,8 +400,9 @@ function charVal(c){
   return null;
 }
 function valToChar(v){
-  return v < 10 ? String.fromCharCode(48 + v)
-                : String.fromCharCode(55 + v); // 10 -> 'A'
+  if (v === 36) return "*"; // Handle the asterisk case
+  return v < 10 ? String.fromCharCode(48 + v)   // 0-9
+                : String.fromCharCode(55 + v);  // 10-35 (A-Z)
 }
 function iso7064(str){
   str = (str || "").replace(/\s+/g, "").toUpperCase();
@@ -406,9 +424,9 @@ function iso7064(str){
   return { ok:true, chk:valToChar(Number(checkVal)) };
 }
 function flagDigits(ch){
-  const v = charVal(ch);
-  const s = String(v);
-  return s.length === 1 ? "0" + s : s;
+  const v = charVal(ch); // e.g., 'G' -> 16
+  const flagValue = v + 60; // e.g., 16 + 60 = 76
+  return String(flagValue); // Returns "76"
 }
 
 /* ====================== Date helpers ====================== */
@@ -609,14 +627,14 @@ function generate(){
     return;
   }
   let base = raw;
-  if(raw.length >= 2){
-    const prefix = raw.slice(0, -1);
-    const last   = raw.slice(-1);
-    const chk1 = iso7064(prefix);
-    if(chk1.ok && chk1.chk === last){
-      base = prefix;
-    }
-  }
+  // if(raw.length >= 2){
+  //   const prefix = raw.slice(0, -1);
+  //   const last   = raw.slice(-1);
+  //   const chk1 = iso7064(prefix);
+  //   if(chk1.ok && chk1.chk === last){
+  //     base = prefix;
+  //   }
+  // }
   const chk = iso7064(base);
   if(!chk.ok){
     $("donation-error").textContent = chk.err;
@@ -630,7 +648,7 @@ function generate(){
   const bSel   = $("blood");
   const bText  = bSel.selectedOptions[0].dataset.text;
   const bStyle = bSel.selectedOptions[0].dataset.style;
-  const bloodPayload = "%" + bSel.value;
+  const bloodPayload = "=%" + bSel.value;
 
   // Expiry (UNCHANGED)
   let d = null;
@@ -780,8 +798,45 @@ function downloadPNG(){
   img.src = url;
 }
 
+/* ====================== Preview Zoom ====================== */
+let previewZoom = 1;
+const ZOOM_MIN = 0.5;
+const ZOOM_MAX = 2.0;
+const ZOOM_STEP = 0.25;
+
+function applyZoom(){
+  const wrapper = document.querySelector(".blood-bag-wrapper");
+  const pct = $("zoomPercent");
+  if(!wrapper) return;
+  wrapper.style.transformOrigin = "center center";
+  wrapper.style.transform = `scale(${previewZoom})`;
+  if(pct) pct.textContent = Math.round(previewZoom * 100) + "%";
+}
+
+function setZoom(value){
+  previewZoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, value));
+  applyZoom();
+}
+
+function initZoomControls(){
+  applyZoom();
+  const zoomInBtn = $("zoomIn");
+  const zoomOutBtn = $("zoomOut");
+  const shell = document.querySelector(".preview-shell");
+  if(zoomInBtn) zoomInBtn.onclick = () => setZoom(previewZoom + ZOOM_STEP);
+  if(zoomOutBtn) zoomOutBtn.onclick = () => setZoom(previewZoom - ZOOM_STEP);
+  if(shell){
+    shell.addEventListener("click", e => {
+      if(!e.target.closest(".blood-bag-wrapper")) return;
+      if(previewZoom < ZOOM_MAX) setZoom(previewZoom + ZOOM_STEP);
+      else setZoom(1);
+    });
+  }
+}
+
 /* Initial setup */
 populateProducts();
+initZoomControls();
 
 // Optional: pre-fill example donation & date
 $("donation").value = "G072425123456";
