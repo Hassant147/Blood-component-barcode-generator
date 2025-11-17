@@ -653,6 +653,25 @@ function stripIds(root){
   descendants.forEach(el => el.removeAttribute('id'));
 }
 
+function cloneCanvases(srcRoot, dstRoot){
+  const src = srcRoot.querySelectorAll('canvas');
+  const dst = dstRoot.querySelectorAll('canvas');
+  if(src.length !== dst.length) return;
+  src.forEach((s,i)=>{
+    const d = dst[i];
+    const data = s.toDataURL('image/png');
+    const img = new Image();
+    img.onload = ()=>{
+      d.width = s.width;
+      d.height = s.height;
+      const ctx = d.getContext('2d');
+      ctx.clearRect(0,0,d.width,d.height);
+      ctx.drawImage(img,0,0);
+    };
+    img.src = data;
+  });
+}
+
 let modalScale = 1;
 const previewModal = $("previewModal");
 const modalHolder = $("modalPreviewHolder");
@@ -673,6 +692,7 @@ function clonePreviewForModal(){
   const clone = bag.cloneNode(true);
   stripIds(clone);
   modalHolder.appendChild(clone);
+  cloneCanvases(bag, clone);
   setModalScale(1);
 }
 
