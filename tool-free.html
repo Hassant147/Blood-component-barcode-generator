@@ -157,6 +157,8 @@
   }
   .modal-body{ flex:1; overflow:auto; padding:10px; display:flex; justify-content:center; align-items:center; }
   .modal-preview-holder{ transform-origin:top left; }
+  .modal-preview-holder{ min-width:400px; min-height:450px; }
+  .modal-preview-holder > .blood-bag-wrapper{ width:400px; height:450px; }
   .modal-controls{ display:flex; gap:10px; align-items:center; justify-content:center; padding-top:10px; }
   .modal-controls button{ padding:6px 12px; border-radius:6px; border:1px solid #999; background:#111; color:#fff; cursor:pointer; }
   .modal-zoom-value{ font-size:14px; }
@@ -212,7 +214,6 @@
 
   <div class="actions">
     <button id="generate" class="primary">Generate</button>
-    <button id="dlSvg">Download SVG</button>
     <button id="dlPng">Download PNG</button>
   </div>
 
