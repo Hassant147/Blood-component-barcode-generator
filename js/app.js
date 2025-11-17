@@ -70,7 +70,8 @@ function generate(){
   // Draw the barcodes
   placeBarcode("donation", donationPayload, base + chk.chk, false);
   placeBarcode("product",  prodBarcode,    prodName,       false);
-  placeBarcode("blood",    bloodPayload,   bText,          true, bStyle === "outline");
+  // Keep all captions above bars for consistency
+  placeBarcode("blood",    bloodPayload,   bText,          false, bStyle === "outline");
 
   const dd = String(d.getDate()).padStart(2,"0");
   const mm = String(d.getMonth()+1).padStart(2,"0");
@@ -126,4 +127,3 @@ function ensureHtml2Canvas(){
   // First render
   generate();
 })();
-

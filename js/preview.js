@@ -48,14 +48,14 @@ function placeBarcode(zoneId, payload, label, labelBelow = false, outline = fals
   // If caption is outlined, its stroke visually extends left. Nudge right by stroke px.
   const outlineStrokePx = outline ? 2 : 0; // keep in sync with .labelText.outline
 
-  if (payload) {
+if (payload) {
     const canvas = document.createElement('canvas');
-    const pw = innerWidth;
+    const pw = Math.max(0, innerWidth - outlineStrokePx); // <-- CHANGED
     const ph = Math.floor(barsH);
     canvas.width = pw;
     canvas.height = ph;
     canvas.style.position = 'absolute';
-    canvas.style.left = innerLeft + 'px';
+    canvas.style.left = (innerLeft + outlineStrokePx) + 'px'; // <-- CHANGED
     canvas.style.top = Math.round(barsTop) + 'px';
     const ctx = canvas.getContext('2d');
     drawCode128ToCanvas(ctx, payload, pw, ph);
@@ -75,6 +75,7 @@ function placeBarcode(zoneId, payload, label, labelBelow = false, outline = fals
     // Align caption start and width with barcode canvas
     cap.style.left = (innerLeft + outlineStrokePx) + 'px';
     cap.style.width = Math.max(0, innerWidth - outlineStrokePx) + 'px';
+    cap.style.boxSizing = 'border-box';
     cap.style.textAlign = 'left';
     cap.style.top = labelBelow ? (barsTop + barsH + 4) + 'px' : '0px';
     cap.textContent = label;
