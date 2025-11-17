@@ -55,12 +55,6 @@
     color:#fff; border:1px solid rgba(255,255,255,0.4); border-radius:8px;
     cursor:pointer;
   }
-  .preview-note{
-    position:absolute; bottom:12px; left:12px; right:12px;
-    padding:10px 12px; font-size:11px; line-height:1.4;
-    background:rgba(0,0,0,0.45); border-radius:10px; color:#f1f5f9;
-  }
-  .preview-note a{ color:var(--accent); text-decoration:underline; }
   .error{ color:var(--err); font-size:12px; min-height:1.2em }
   .mono{ font-family:ui-monospace,Consolas,monospace }
   .labelText{ font:700 16px/1 Inter,Arial; color:#111 }
@@ -150,18 +144,20 @@
     width:min(95vw,900px); height:min(95vh,800px); display:flex; flex-direction:column;
     box-shadow:0 30px 60px rgba(0,0,0,0.25);
   }
-  .modal-header{ font-size:18px; font-weight:700; margin:0; }
+  .modal-header{ font-size:18px; font-weight:700; margin:0; color:#111; }
   .modal-close{
     position:absolute; top:12px; right:12px; background:none; border:none;
-    font-size:16px; cursor:pointer;
+    font-size:16px; cursor:pointer; color:#111;
   }
-  .modal-body{ flex:1; overflow:auto; padding:10px; display:flex; justify-content:center; align-items:center; }
+  .modal-body{ flex:1; overflow:auto; padding:10px; display:flex; justify-content:center; align-items:center; color:#111; }
   .modal-preview-holder{ transform-origin:top left; }
   .modal-preview-holder{ min-width:400px; min-height:450px; }
   .modal-preview-holder > .blood-bag-wrapper{ width:400px; height:450px; }
-  .modal-controls{ display:flex; gap:10px; align-items:center; justify-content:center; padding-top:10px; }
-  .modal-controls button{ padding:6px 12px; border-radius:6px; border:1px solid #999; background:#111; color:#fff; cursor:pointer; }
-  .modal-zoom-value{ font-size:14px; }
+  .modal-controls{ display:flex; gap:10px; align-items:center; justify-content:center; padding-top:10px; color:#111; }
+  .modal-controls button{ padding:6px 12px; border-radius:6px; border:1px solid #999; background:#f1f5f9; color:#111; cursor:pointer; }
+  .modal-zoom-value{ font-size:14px; color:#111; }
+  .instructions{ margin-top:12px; padding:12px; background:var(--panel); border-radius:10px; font-size:12px; line-height:1.5; color:var(--text); }
+  .instructions a{ color:var(--accent); text-decoration:underline; }
 </style>
 </head>
 <body>
@@ -250,12 +246,12 @@
       </div>
     </div>
     <button id="openPreview" class="preview-open" type="button">Open large preview</button>
-    <div class="preview-note">
-      <p><a href="https://onlycells.co.uk/blood-component-barcode-generator/" target="_blank" rel="noreferrer">Instructions for use</a></p>
-      <p>To unlock the full component list, please email <a href="mailto:shop@onlycells.co.uk">shop@onlycells.co.uk</a> for a quote.</p>
-      <p>For any feedback or suggestions please email <a href="mailto:anas@onlycells.co.uk">anas@onlycells.co.uk</a></p>
-      <p>Copyright Only Cells LTD.</p>
-    </div>
+  </div>
+  <div class="instructions">
+    <p><a href="https://onlycells.co.uk/blood-component-barcode-generator/" target="_blank" rel="noreferrer">Instructions for use</a></p>
+    <p>To unlock the full component list, please email <a href="mailto:shop@onlycells.co.uk">shop@onlycells.co.uk</a> for a quote.</p>
+    <p>For any feedback or suggestions please email <a href="mailto:anas@onlycells.co.uk">anas@onlycells.co.uk</a></p>
+    <p>Copyright Only Cells LTD.</p>
   </div>
 </main>
 
