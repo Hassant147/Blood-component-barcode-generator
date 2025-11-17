@@ -222,13 +222,397 @@
 </main>
 
 <canvas id="scratch" style="display:none"></canvas>
+<script>
+/* ====================== SPN223 Appendix 4 Catalogue (full/paid) ====================== */
+const CATALOGUE_FULL = [
+  // --- Core red cell products ---
+  { name: "Red Cells in Additive Solution, LD",                                    barcode: "a0043333b", fluid: "red" },
+  { name: "Red Cells in Additive Solution, LD, Irradiated",                       barcode: "a0443333b", fluid: "red" },
+  { name: "Red Cells Thawed and Washed, LD",                                      barcode: "a0064603b", fluid: "red" },
+  { name: "Red Cells Thawed and Washed, LD (Closed System Preparation)",          barcode: "a0542633b", fluid: "red" },
+  { name: "Red Cells, Washed, LD (Manual wash in SAGM)",                          barcode: "a0465313b", fluid: "red" },
+  { name: "Red Cells, Washed, LD, Irradiated (Manual wash in SAGM)",              barcode: "a0465323b", fluid: "red" },
 
-<script src="catalogue.js"></script>
-<script src="js/util.js"></script>
-<script src="js/date.js"></script>
-<script src="js/checksum.js"></script>
-<script src="js/code128.js"></script>
-<script src="js/preview.js"></script>
-<script src="js/app.js"></script>
+  // --- Platelets, Apheresis, LD ---
+  { name: "Platelets, Apheresis, LD — Single unit",                               barcode: "a0542883b", fluid: "yellow" },
+  { name: "Platelets, Apheresis, LD — Pack 1",                                    barcode: "a0542893b", fluid: "yellow" },
+  { name: "Platelets, Apheresis, LD — Pack 2",                                    barcode: "a0542903b", fluid: "yellow" },
+  { name: "Platelets, Apheresis, LD — Pack 3",                                    barcode: "a0542913b", fluid: "yellow" },
+
+  // --- Platelets, Apheresis, LD, Irradiated ---
+  { name: "Platelets, Apheresis, LD, Irradiated — Single unit",                   barcode: "a0542923b", fluid: "yellow" },
+  { name: "Platelets, Apheresis, LD, Irradiated — Pack 1",                        barcode: "a0542933b", fluid: "yellow" },
+  { name: "Platelets, Apheresis, LD, Irradiated — Pack 2",                        barcode: "a0542943b", fluid: "yellow" },
+  { name: "Platelets, Apheresis, LD, Irradiated — Pack 3",                        barcode: "a0542953b", fluid: "yellow" },
+
+  // --- Platelets Apheresis in Additive Solution, LD ---
+  { name: "Platelets Apheresis in Additive Solution, LD — Pack 1",                barcode: "a0542433b", fluid: "yellow" },
+  { name: "Platelets Apheresis in Additive Solution, LD — Pack 2",                barcode: "a0542443b", fluid: "yellow" },
+  { name: "Platelets Apheresis in Additive Solution, LD — Pack 3",                barcode: "a0542453b", fluid: "yellow" },
+  { name: "Platelets Apheresis in Additive Solution, LD — Single unit",           barcode: "a0542463b", fluid: "yellow" },
+
+  // --- Platelets Apheresis in Additive Solution, LD, Irradiated ---
+  { name: "Platelets Apheresis in Additive Solution, LD, Irradiated — Pack 1",    barcode: "a0542333b", fluid: "yellow" },
+  { name: "Platelets Apheresis in Additive Solution, LD, Irradiated — Pack 2",    barcode: "a0542343b", fluid: "yellow" },
+  { name: "Platelets Apheresis in Additive Solution, LD, Irradiated — Pack 3",    barcode: "a0542353b", fluid: "yellow" },
+  { name: "Platelets Apheresis in Additive Solution, LD, Irradiated — Single unit",barcode: "a0542363b", fluid: "yellow" },
+
+  // --- Platelets Pooled in Additive Solution and Plasma, LD ---
+  { name: "Platelets Pooled in Additive Solution and Plasma, LD",                 barcode: "a0544773b", fluid: "yellow" },
+  { name: "Platelets Pooled in Additive Solution and Plasma, LD, Irradiated",     barcode: "A0544783b", fluid: "yellow" },
+
+  // --- Fresh Frozen Plasma, LD (adult) ---
+  { name: "Fresh Frozen Plasma, LD — Whole blood",                                barcode: "a0183003b", fluid: "yellow" },
+  { name: "Fresh Frozen Plasma, LD — Single unit",                                barcode: "a0183203b", fluid: "yellow" },
+  { name: "Fresh Frozen Plasma, LD — Pack 1",                                     barcode: "a0183213b", fluid: "yellow" },
+  { name: "Fresh Frozen Plasma, LD — Pack 2",                                     barcode: "a0183223b", fluid: "yellow" },
+
+  // --- Cryoprecipitate, pooled ---
+  { name: "Cryoprecipitate, Pooled, LD",                                          barcode: "a0101903b", fluid: "yellow" },
+
+  // --- Red cells for special use (IUT / neonatal / exchange) ---
+  { name: "Red Cells, CPD, LD, Irradiated, for Intrauterine Transfusion",         barcode: "a0400183b", fluid: "red" },
+
+  { name: "Red Cells in Additive Solution, LD for Neonatal Use — Pack 1",         barcode: "a0568303b", fluid: "red" },
+  { name: "Red Cells in Additive Solution, LD for Neonatal Use — Pack 2",         barcode: "a0568313b", fluid: "red" },
+  { name: "Red Cells in Additive Solution, LD for Neonatal Use — Pack 3",         barcode: "a0568323b", fluid: "red" },
+  { name: "Red Cells in Additive Solution, LD for Neonatal Use — Pack 4",         barcode: "a0568333b", fluid: "red" },
+  { name: "Red Cells in Additive Solution, LD for Neonatal Use — Pack 5",         barcode: "a0568343b", fluid: "red" },
+  { name: "Red Cells in Additive Solution, LD for Neonatal Use — Pack 6",         barcode: "a0568353b", fluid: "red" },
+
+  { name: "Red Cells in Additive Solution, LD, Irradiated, for Neonatal Use — Pack 1", barcode: "a0468303b", fluid: "red" },
+  { name: "Red Cells in Additive Solution, LD, Irradiated, for Neonatal Use — Pack 2", barcode: "a0468313b", fluid: "red" },
+  { name: "Red Cells in Additive Solution, LD, Irradiated, for Neonatal Use — Pack 3", barcode: "a0468323b", fluid: "red" },
+  { name: "Red Cells in Additive Solution, LD, Irradiated, for Neonatal Use — Pack 4", barcode: "a0468333b", fluid: "red" },
+  { name: "Red Cells in Additive Solution, LD, Irradiated, for Neonatal Use — Pack 5", barcode: "a0468343b", fluid: "red" },
+  { name: "Red Cells in Additive Solution, LD, Irradiated, for Neonatal Use — Pack 6", barcode: "a0468353b", fluid: "red" },
+
+  { name: "Red Cells (CPD), LD, Irradiated for Exchange Transfusion",             barcode: "a0403503b", fluid: "red" },
+  { name: "Red Cells in Additive Solution, LD for Neonates and Infants",          barcode: "a0544813b", fluid: "red" },
+  { name: "Red Cells in Additive Solution, LD, Irradiated for Neonates and Infants", barcode: "a0544823b", fluid: "red" },
+
+  // --- Platelets / plasma / cryo for neonatal & infant use ---
+  { name: "Platelets, Hyperconcentrated, Irradiated, for Neonatal Use",          barcode: "a0429643b", fluid: "yellow" },
+
+  { name: "Platelets in Plasma and Additive Solution, LD for Neonatal Use — Pack 1", barcode: "a0300313b", fluid: "yellow" },
+  { name: "Platelets in Plasma and Additive Solution, LD for Neonatal Use — Pack 2", barcode: "A0300323b", fluid: "yellow" },
+  { name: "Platelets in Plasma and Additive Solution, LD for Neonatal Use — Pack 3", barcode: "A0300333b", fluid: "yellow" },
+  { name: "Platelets in Plasma and Additive Solution, LD for Neonatal Use — Pack 4", barcode: "A0300343b", fluid: "yellow" },
+  { name: "Platelets in Plasma and Additive Solution, LD for Neonatal Use — Pack 5", barcode: "A0300353b", fluid: "yellow" },
+  { name: "Platelets in Plasma and Additive Solution, LD for Neonatal Use — Pack 6", barcode: "A0300363b", fluid: "yellow" },
+  { name: "Platelets in Plasma and Additive Solution, LD for Neonatal Use — Pack 7", barcode: "A0300373b", fluid: "yellow" },
+  { name: "Platelets in Plasma and Additive Solution, LD for Neonatal Use — Pack 8", barcode: "A0300383b", fluid: "yellow" },
+
+  { name: "Platelets in Plasma and Additive Solution, LD Irradiated, for Neonatal Use — Pack 1", barcode: "A0300513b", fluid: "yellow" },
+  { name: "Platelets in Plasma and Additive Solution, LD Irradiated, for Neonatal Use — Pack 2", barcode: "A0300523b", fluid: "yellow" },
+  { name: "Platelets in Plasma and Additive Solution, LD Irradiated, for Neonatal Use — Pack 3", barcode: "A0300533b", fluid: "yellow" },
+  { name: "Platelets in Plasma and Additive Solution, LD Irradiated, for Neonatal Use — Pack 4", barcode: "A0300543b", fluid: "yellow" },
+  { name: "Platelets in Plasma and Additive Solution, LD Irradiated, for Neonatal Use — Pack 5", barcode: "A0300553b", fluid: "yellow" },
+  { name: "Platelets in Plasma and Additive Solution, LD Irradiated, for Neonatal Use — Pack 6", barcode: "A0300563b", fluid: "yellow" },
+  { name: "Platelets in Plasma and Additive Solution, LD Irradiated, for Neonatal Use — Pack 7", barcode: "A0300573b", fluid: "yellow" },
+  { name: "Platelets in Plasma and Additive Solution, LD Irradiated, for Neonatal Use — Pack 8", barcode: "A0300583b", fluid: "yellow" },
+
+  { name: "Fresh Frozen Plasma, LD for Neonatal Use — Pack 1",                   barcode: "A0696013b", fluid: "yellow" },
+  { name: "Fresh Frozen Plasma, LD for Neonatal Use — Pack 2",                   barcode: "A0696023b", fluid: "yellow" },
+  { name: "Fresh Frozen Plasma, LD for Neonatal Use — Pack 3",                   barcode: "A0696033b", fluid: "yellow" },
+  { name: "Fresh Frozen Plasma, LD for Neonatal Use — Pack 4",                   barcode: "A0696043b", fluid: "yellow" },
+  { name: "Fresh Frozen Plasma, LD for Neonatal Use — Pack 5",                   barcode: "A0597113b", fluid: "yellow" },
+  { name: "Fresh Frozen Plasma, LD for Neonatal Use — Pack 6",                   barcode: "A0597123b", fluid: "yellow" },
+  { name: "Fresh Frozen Plasma, LD for Neonatal Use — Pack 7",                   barcode: "A0597133b", fluid: "yellow" },
+  { name: "Fresh Frozen Plasma, LD for Neonatal Use — Pack 8",                   barcode: "A0597143b", fluid: "yellow" },
+  { name: "Fresh Frozen Plasma, LD for Neonatal Use — Pack 9",                   barcode: "A0597153b", fluid: "yellow" },
+  { name: "Fresh Frozen Plasma, LD for Neonatal Use — Pack 10",                  barcode: "A0597163b", fluid: "yellow" },
+  { name: "Fresh Frozen Plasma, LD for Neonatal Use — Pack 11",                  barcode: "A0597173b", fluid: "yellow" },
+  { name: "Fresh Frozen Plasma, LD for Neonatal Use — Pack 12",                  barcode: "A0597183b", fluid: "yellow" },
+
+  { name: "Cryoprecipitate, LD for Neonatal Use",                                barcode: "A0299813b", fluid: "yellow" },
+
+  // --- Granulocytes ---
+  { name: "Granulocytes, Pooled, in Additive Solution/Plasma Mix, Irradiated",   barcode: "a0543953b", fluid: "yellow" },
+];
+
+/* ====================== Helpers ====================== */
+function $(id){ return document.getElementById(id); }
+
+/* ====================== Date helpers ====================== */
+function parseDDMMYY(t){
+  const m = String(t||"").trim().match(/^(\d{2})\/(\d{2})\/(\d{2})$/);
+  if (!m) return null;
+  const dd = +m[1], mm = +m[2], yy = +m[3];
+  const y = yy <= 79 ? 2000 + yy : 1900 + yy;
+  const d = new Date(y, mm-1, dd);
+  return (d.getFullYear()===y && d.getMonth()+1===mm && d.getDate()===dd) ? d : null;
+}
+function last3(y){ return String(y % 1000).padStart(3,"0"); }
+function julian(d){
+  const s = new Date(d.getFullYear(),0,1);
+  return String(Math.floor((d - s)/86400000)+1).padStart(3,"0");
+}
+
+/* ====================== ISO/IEC 7064 MOD 37-2 ====================== */
+function charVal(c){
+  c = c.toUpperCase().charCodeAt(0);
+  if (c >= 48 && c <= 57) return c - 48;
+  if (c >= 65 && c <= 90) return c - 55;
+  return null;
+}
+function valToChar(v){
+  return v < 10 ? String.fromCharCode(48 + v) : String.fromCharCode(55 + v);
+}
+function iso7064(str){
+  str = (str || "").replace(/\s+/g, "").toUpperCase();
+  if (!/^[A-Z0-9]+$/.test(str)) return { ok:false, err:"Only A–Z and 0–9 allowed" };
+  let product = 0;
+  for (const ch of str){
+    const v = charVal(ch);
+    product = ((product + v) * 2) % 37;
+  }
+  const checkVal = (38 - product) % 37;
+  return { ok:true, chk:valToChar(checkVal) };
+}
+function flagDigits(ch){
+  const v = charVal(ch);
+  const s = String(v);
+  return s.length === 1 ? "0" + s : s;
+}
+
+/* ====================== Code-128 (Set B) ====================== */
+const PAT=["212222","222122","222221","121223","121322","131222","122213","122312","132212","221213","221312","231212","112232","122132","122231","113222","123122","123221","223211","221132","221231","213212","223112","312131","311222","321122","321221","312212","322112","322211","212123","212321","232121","111323","131123","131321","112313","132113","132311","211313","231113","231311","112133","112331","132131","113123","113321","133121","313121","211331","231131","213113","213311","213131","311123","311321","331121","312113","312311","332111","314111","221411","431111","111224","111422","121124","121421","141122","141221","112214","112412","122114","122411","142112","142211","241211","221114","413111","241112","134111","111242","121142","121241","114212","124112","124211","411212","421112","421211","212141","214121","412121","111143","111341","131141","114113","114311","411113","411311","113141","114131","311141","411131","211412","211214","211232","2331112"];
+function enc128B(s){
+  const out=[];
+  for(const ch of s){
+    const c=ch.charCodeAt(0);
+    if(c<32||c>126) throw Error("Code128B supports ASCII 32..126");
+    out.push(c-32);
+  }
+  return out;
+}
+function cksum(codes,start){
+  let s=start;
+  for(let i=0;i<codes.length;i++) s+=codes[i]*(i+1);
+  return s%103;
+}
+function drawCode128ToCanvas(ctx, text, width, height){
+  const start=104;
+  const data=enc128B(text);
+  const sum=cksum(data,start);
+  const seq=[start,...data,sum,106];
+  const modules=[];
+  seq.forEach(v=>PAT[v].split("").forEach(n=>modules.push(+n)));
+  const quietMods=10;
+  const totalMods=modules.reduce((a,b)=>a+b,0)+quietMods*2;
+  const modW=width/totalMods;
+  let x=quietMods*modW;
+  let bar=true;
+  ctx.fillStyle = "#000";
+  for(const m of modules){
+    const w=m*modW;
+    if(bar){
+      ctx.fillRect(Math.round(x), 0, Math.ceil(w), height);
+    }
+    x+=w;
+    bar=!bar;
+  }
+}
+
+/* ====================== Preview (CSS Blood Bag) ====================== */
+function setFluidColor(kind){
+  const body = document.querySelector('.blood-bag-body');
+  const ports = document.querySelectorAll('.port-center-left, .port-center-right');
+  const color = kind === 'yellow' ? getComputedStyle(document.documentElement).getPropertyValue('--plasma-yellow') || '#d6a500' : getComputedStyle(document.documentElement).getPropertyValue('--blood-red') || '#8a0e0e';
+  if(body) body.style.backgroundColor = color.trim();
+  ports.forEach(p => p.style.backgroundColor = color.trim());
+}
+
+function placeBarcode(zoneId, payload, label, labelBelow = false, outline = false) {
+  const BASE = { w: 370, h: 260 };
+  const zones = {
+    donation: { x: 5,   y: 25,  w: 210, h: 80 },
+    blood:    { x: 225, y: 25,  w: 140, h: 80 },
+    product:  { x: 5,   y: 135, w: 210, h: 100 },
+    expiry:   { x: 225, y: 135, w: 140, h: 100 }
+  };
+  const cfg = zones[zoneId];
+  if (!cfg) return;
+
+  const labelEl = $("cssLabel");
+  const g = $("zone" + zoneId[0].toUpperCase() + zoneId.slice(1));
+  if (!labelEl || !g) return;
+  while (g.firstChild) g.removeChild(g.firstChild);
+  if (!payload && !label) return;
+
+  const scaleX = labelEl.clientWidth / BASE.w;
+  const scaleY = labelEl.clientHeight / BASE.h;
+  const X = Math.round(cfg.x * scaleX);
+  const Y = Math.round(cfg.y * scaleY);
+  const W = Math.round(cfg.w * scaleX);
+  const H = Math.round(cfg.h * scaleY);
+
+  g.style.left = X + 'px';
+  g.style.top = Y + 'px';
+  g.style.width = W + 'px';
+  g.style.height = H + 'px';
+
+  const labelBand = 20;
+  const gap = 4;
+  let barsH = Math.max(24, H - (labelBand + gap));
+  let barsTop = labelBelow ? 0 : (labelBand + gap);
+
+  const innerLeft = Math.round(W * 0.025);
+  const innerWidth = Math.floor(W * 0.95);
+  const outlineStrokePx = outline ? 2 : 0;
+
+  if (payload) {
+    const canvas = document.createElement('canvas');
+    const pw = Math.max(0, innerWidth - outlineStrokePx);
+    const ph = Math.floor(barsH);
+    canvas.width = pw;
+    canvas.height = ph;
+    canvas.style.position = 'absolute';
+    canvas.style.left = (innerLeft + outlineStrokePx) + 'px';
+    canvas.style.top = Math.round(barsTop) + 'px';
+    const ctx = canvas.getContext('2d');
+    drawCode128ToCanvas(ctx, payload, pw, ph);
+    g.appendChild(canvas);
+  } else {
+    barsH = 0;
+    barsTop = labelBelow ? 0 : 14;
+  }
+
+  if (label) {
+    const cap = document.createElement('div');
+    cap.className = 'caption labelText' + (outline ? ' outline' : '');
+    let fs = 12;
+    if (label.length > 30) fs = 10; else if (label.length > 25) fs = 11;
+    cap.style.fontSize = fs + 'px';
+    cap.style.position = 'absolute';
+    cap.style.left = (innerLeft + outlineStrokePx) + 'px';
+    cap.style.width = Math.max(0, innerWidth - outlineStrokePx) + 'px';
+    cap.style.boxSizing = 'border-box';
+    cap.style.textAlign = 'left';
+    cap.style.top = labelBelow ? (barsTop + barsH + 4) + 'px' : '0px';
+    cap.textContent = label;
+    g.appendChild(cap);
+  }
+}
+
+/* ====================== App ====================== */
+function populateProducts(){
+  const sel = $("product");
+  sel.innerHTML = "";
+  for(const p of CATALOGUE_FULL){
+    const opt = document.createElement("option");
+    opt.value = p.barcode;
+    opt.textContent = p.name;
+    opt.dataset.barcode = p.barcode;
+    opt.dataset.fluid = p.fluid;
+    sel.appendChild(opt);
+  }
+}
+
+function generate(){
+  const opt = $("product").selectedOptions[0];
+  if(!opt) return;
+  const prodBarcode = opt.dataset.barcode;
+  const prodName = opt.textContent;
+  setFluidColor(opt.dataset.fluid === "yellow" ? "yellow" : "red");
+
+  const raw = ($("donation").value || "").trim().toUpperCase();
+  if(!raw || !/^[A-Z0-9]+$/.test(raw)){
+    $("donation-error").textContent = "Enter a donation number using only A–Z and 0–9.";
+    return;
+  }
+
+  let base = raw;
+  if(raw.length >= 2){
+    const prefix = raw.slice(0, -1);
+    const last   = raw.slice(-1);
+    const chk1 = iso7064(prefix);
+    if(chk1.ok && chk1.chk === last){
+      base = prefix;
+    }
+  }
+
+  const chk = iso7064(base);
+  if(!chk.ok){
+    $("donation-error").textContent = chk.err;
+    return;
+  }
+  $("donation-error").textContent = "";
+  $("donationChk").textContent = chk.chk;
+
+  const donationPayload = "=" + base.toLowerCase() + flagDigits(chk.chk);
+
+  const bSel   = $("blood");
+  const bText  = bSel.selectedOptions[0].dataset.text;
+  const bStyle = bSel.selectedOptions[0].dataset.style;
+  const bloodPayload = "=%" + bSel.value;
+
+  let d = null;
+  const pp = $("expiry").value;
+  if(pp){
+    d = new Date(pp + "T00:00:00");
+  }
+  if(!d || isNaN(d.getTime())){
+    $("expiry-error").textContent = "Enter a valid date (dd-mm-yyyy).";
+    return;
+  }
+  $("expiry-error").textContent = "";
+  const expiryPayload = "a2" + last3(d.getFullYear()) + julian(d) + "4a";
+
+  placeBarcode("donation", donationPayload, base + chk.chk, false);
+  placeBarcode("product",  prodBarcode,    prodName,       false);
+  placeBarcode("blood",    bloodPayload,   bText,          false, bStyle === "outline");
+
+  const dd = String(d.getDate()).padStart(2,"0");
+  const mm = String(d.getMonth()+1).padStart(2,"0");
+  const yyyy = d.getFullYear();
+  placeBarcode("expiry",   expiryPayload,  `Expiry ${dd}/${mm}/${yyyy}`, false);
+}
+
+function downloadSVG(){
+  alert('SVG export is not available with the CSS preview. Use PNG export.');
+}
+
+async function downloadPNG(){
+  const wrapper = document.getElementById('bagPreview');
+  if (!wrapper) return;
+  await ensureHtml2Canvas();
+  const canvas = await window.html2canvas(wrapper, {
+    backgroundColor: null,
+    scale: 2
+  });
+  const a = document.createElement('a');
+  a.href = canvas.toDataURL('image/png');
+  a.download = 'blood-label.png';
+  a.click();
+}
+
+function ensureHtml2Canvas(){
+  return new Promise((resolve,reject)=>{
+    if(window.html2canvas) return resolve();
+    const s=document.createElement('script');
+    s.src='https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
+    s.onload=()=>resolve();
+    s.onerror=()=>reject(new Error('Failed to load html2canvas'));
+    document.head.appendChild(s);
+  });
+}
+
+(function init(){
+  populateProducts();
+  $("donation").value = "G072425123456";
+  const today = new Date();
+  $("expiry").value = today.toISOString().slice(0,10);
+
+  $("generate").onclick = generate;
+  $("dlSvg").onclick = downloadSVG;
+  $("dlPng").onclick = downloadPNG;
+  $("expiry").addEventListener("focus", e => e.target.showPicker && e.target.showPicker());
+  $("expiry").addEventListener("click",  e => e.target.showPicker && e.target.showPicker());
+
+  generate();
+})();
+</script>
 </body>
 </html>
