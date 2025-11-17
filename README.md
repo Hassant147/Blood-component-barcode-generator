@@ -2,5 +2,6 @@
 
 Blood component barcode generator with modular JS and CSS bag preview.
 
-- Open tool.html in a browser
+- Free edition: `tool-free.html` (Red Cells in Additive Solution, LD only)
+- Paid edition: `tool.html` (full catalogue)
 - Generate labels and export PNG
