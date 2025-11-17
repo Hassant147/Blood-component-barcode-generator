@@ -391,13 +391,19 @@ function iso7064(str){
   if (!/^[A-Z0-9]+$/.test(str)){
     return { ok:false, err:"Only A–Z and 0–9 allowed" };
   }
-  let product = 0;
+  // Use BigInt for calculations to prevent potential overflow with long strings,
+  // as the intermediate sum can get very large.
+  let sum = 0n; 
   for (const ch of str){
-    const v = charVal(ch);
-    product = ((product + v) * 2) % 37;
+    const v = BigInt(charVal(ch));
+    sum = (sum + v) * 2n;
   }
-  const checkVal = (38 - product) % 37;
-  return { ok:true, chk:valToChar(checkVal) };
+  const mod37Val = sum % 37n;
+  const subtractedVal = 38n - mod37Val;
+  const checkVal = subtractedVal % 37n;
+  
+  // Convert the final BigInt result back to a Number to use in valToChar
+  return { ok:true, chk:valToChar(Number(checkVal)) };
 }
 function flagDigits(ch){
   const v = charVal(ch);
