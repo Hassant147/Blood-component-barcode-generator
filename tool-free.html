@@ -4,7 +4,6 @@
 <meta charset="utf-8" />
 <title>Blood component barcode generator</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<!-- We'll use the Inter font, a clean sans-serif font -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
@@ -71,7 +70,24 @@
     font-size:12px;
     color:var(--muted);
   }
-  .zoom-percent{ min-width:48px; text-align:center; }
+  
+  /* UPDATED: Styles for the new zoom input field */
+  .zoom-percent { 
+    padding:4px 6px; 
+    border-radius:6px;
+    border:1px solid #262b3d; 
+    background:#0e1119; 
+    color:var(--text);
+    min-width: 60px; /* Increased width to accommodate 3 digits + '%' */
+    text-align: center;
+    font-size: 12px;
+    height: 36px; /* Match button height */
+    box-sizing: border-box;
+    display: flex; /* Makes it act like a flex item */
+    align-items: center;
+    justify-content: center;
+  }
+  
   .zoom-btn{ padding:6px 10px; font-size:12px; }
   .error{ color:var(--err); font-size:12px; min-height:1.2em }
   .mono{ font-family:ui-monospace,Consolas,monospace }
@@ -83,13 +99,6 @@
   
   small.hint{ color:var(--muted); display:block; margin-top:6px }
   
-  /* Removed old #bag styles */
-  
-  @media (max-width:900px){
-    body{ grid-template-columns:1fr; }
-    .preview-shell{ height:60vh }
-  }
-
   /* --- START: NEW CSS BLOOD BAG STYLES --- */
   
   /* Wrapper to hold all the parts together */
@@ -136,11 +145,10 @@
       /* Center the label */
       top: 50%;
       left: 50%;
-      transform: translate(-50%, -50%);
+      transform: translate(-50%, -55%);
       margin-top: 20px; /* Nudge it down a bit */
       
       box-sizing: border-box;
-      /* Removed padding, dummy text, etc. */
       /* CRITICAL: Must be relative for the SVG overlay */
       position: relative;
   }
@@ -195,7 +203,6 @@
 </header>
 
 <aside class="left">
-  <!-- All form elements unchanged -->
   <div class="group">
     <label for="product">Product</label>
     <select id="product"></select>
@@ -241,49 +248,36 @@
     <button id="dlPng">Download PNG</button>
   </div>
 
+  
   <div style="text-align: left; font-size: 12px; color: var(--muted); padding-top: 16px; margin-top: auto;">
-    For any feedback, suggestions or to purchase the full version of the tool, contact anas@onlycells.co.uk
+        <a href="https://onlycells.co.uk/blood-component-barcode-generator/" style="color: var(--accent); display: block; margin-bottom: 6px;">Instructions for Use</a>
+
+    For any feedback, suggestions or to purchase the full version of the tool, contact <a href="mailto:anas@onlycells.co.uk" style="color: var(--accent);">anas@onlycells.co.uk</a>
     <br>
     Only Cells LTD © 2025
   </div>
-</aside>
+  </aside>
 
 <main class="right">
   <div class="preview-shell">
     
-    <!-- START: NEW CSS BLOOD BAG HTML -->
-    <!-- This is the container for all the CSS parts -->
     <div class="blood-bag-wrapper">
-        <!-- These are the two tall outer grey ports (behind the bag) -->
         <div class="port-outer-left"></div>
         <div class="port-outer-right"></div>
         
-        <!-- This is the main bag body -->
-        <!-- Added id="css-bag-body" for JS to control color -->
         <div class="blood-bag-body" id="css-bag-body"></div>
         
-        <!-- These are the two short center ports (on top of the bag) -->
-        <!-- These inherit the color from the body -->
         <div class="port-center-left"></div>
         <div class="port-center-right"></div>
         
-        <!-- This is the white label (on top of the bag) -->
         <div class="blood-bag-label" id="css-bag-label">
             
-            <!-- 
-              CRITICAL: This is a transparent SVG overlay.
-              It sits on top of the CSS label div.
-              Its viewBox matches the label's pixel dimensions (340x280).
-              The original barcode-generating logic now draws into this SVG.
-            -->
             <svg id="barcode-overlay" 
                  xmlns="http://www.w3.org/2000/svg"
                  viewBox="0 0 340 280" 
                  preserveAspectRatio="xMidYMid meet" 
                  style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; background:transparent;">
                 
-                <!-- The original zones, now as children of this new SVG -->
-                <!-- The placeBarcode() function will draw into these groups -->
                 <g id="zoneDonation"></g>
                 <g id="zoneProduct"></g>
                 <g id="zoneBlood"></g>
@@ -292,12 +286,10 @@
             
         </div>
     </div>
-    <!-- END: NEW CSS BLOOD BAG HTML -->
-
-  </div>
+    </div>
   <div class="zoom-controls">
     <button id="zoomOut" type="button" class="zoom-btn">◀</button>
-    <span id="zoomPercent" class="zoom-percent">100%</span>
+    <input id="zoomPercent" class="zoom-percent mono" type="text" value="100%"/>
     <button id="zoomIn" type="button" class="zoom-btn">▶</button>
   </div>
 </main>
@@ -305,10 +297,12 @@
 <canvas id="scratch" style="display:none"></canvas>
 
 <script>
-/* ====================== SPN223 Appendix 4 Catalogue (Free) ====================== */
-/* Free version exposes only a single core product */
+/* ====================== SPN223 Appendix 4 Catalogue ====================== */
+/* (Unchanged) */
 const CATALOGUE_FULL = [
-  { name: "Red Cells in Additive Solution, LD", barcode: "a0043333b", fluid: "red" },
+  // --- Core red cell products ---
+  { name: "Red Cells in Additive Solution, LD",                                    barcode: "a0043333b", fluid: "red" },
+  
 ];
 
 /* ====================== ISO/IEC 7064 MOD 37-2 ====================== */
@@ -329,13 +323,19 @@ function iso7064(str){
   if (!/^[A-Z0-9]+$/.test(str)){
     return { ok:false, err:"Only A–Z and 0–9 allowed" };
   }
-  let product = 0;
+  // Use BigInt for calculations to prevent potential overflow with long strings,
+  // as the intermediate sum can get very large.
+  let sum = 0n; 
   for (const ch of str){
-    const v = charVal(ch);
-    product = ((product + v) * 2) % 37;
+    const v = BigInt(charVal(ch));
+    sum = (sum + v) * 2n;
   }
-  const checkVal = (38 - product) % 37;
-  return { ok:true, chk:valToChar(checkVal) };
+  const mod37Val = sum % 37n;
+  const subtractedVal = 38n - mod37Val;
+  const checkVal = subtractedVal % 37n;
+  
+  // Convert the final BigInt result back to a Number to use in valToChar
+  return { ok:true, chk:valToChar(Number(checkVal)) };
 }
 function flagDigits(ch){
   const v = charVal(ch); // e.g., 'G' -> 16
@@ -431,9 +431,8 @@ function setFluidColor(kind){
 
 /**
  * [MODIFIED] placeBarcode
- * The coordinates in `zones` have been recalculated to fit the new
- * SVG overlay's viewBox="0 0 340 280".
- * The core logic of drawing bars and text is UNCHANGED.
+ * - Barcode height is reduced by increasing the reserved space for the label.
+ * - Text wrapping logic for the 'product' field is introduced to prevent overlap on long names.
  */
 function placeBarcode(zoneId, payload, label, labelBelow = false, outline = false) {
   
@@ -460,9 +459,11 @@ function placeBarcode(zoneId, payload, label, labelBelow = false, outline = fals
   
   if (!payload && !label) return;
 
-  const labelBand = 20; 
+  // INCREASED labelBand to 30 to reserve more space for the label, especially for 2 lines
+  const labelBand = 30; 
   const gap = 4;        
-  let barsH = Math.max(24, cfg.h - (labelBand + gap));
+  // Reduced effective bar height to give space for the label above.
+  let barsH = Math.max(24, cfg.h - (labelBand + gap)); 
   let barsY = labelBelow ? cfg.y : (cfg.y + labelBand + gap);
   
   if (payload) {
@@ -486,22 +487,64 @@ function placeBarcode(zoneId, payload, label, labelBelow = false, outline = fals
     text.setAttribute("class", "labelText");
     text.setAttribute("fill", "#111");
   }
-  text.setAttribute("font-size", "10");
+  
   text.setAttribute("font-weight", "700");
   text.setAttribute("text-anchor", "start");
+
+  // --- START: MODIFIED WRAPPING/FONT SIZE LOGIC ---
+  let lines = [label];
+  let fontSize = 10;
   
-  if (label.length > 30) {
-     text.setAttribute("font-size", "8");
-  } else if (label.length > 25) {
-     text.setAttribute("font-size", "9");
+  // Custom wrapping logic for product name (which is in the wider zone)
+  if (zoneId === 'product' && label.length > 20) {
+      // Try to find a space near the center for a split
+      const idealSplit = Math.ceil(label.length / 2);
+      let splitIndex = -1;
+      
+      const spaceBefore = label.lastIndexOf(' ', idealSplit);
+      const spaceAfter = label.indexOf(' ', idealSplit);
+
+      // Prefer a split point that is close to the middle (within 8 characters)
+      if (spaceBefore !== -1 && (idealSplit - spaceBefore) <= 8) {
+          splitIndex = spaceBefore;
+      } else if (spaceAfter !== -1 && spaceAfter !== -1 && (spaceAfter - idealSplit) <= 8) {
+          splitIndex = spaceAfter;
+      }
+      
+      if (splitIndex > 0) {
+          // Successfully split into two lines
+          lines = [label.substring(0, splitIndex).trim(), label.substring(splitIndex + 1).trim()].filter(l => l.length > 0);
+          fontSize = 10; // Keep font size 10 for two lines
+      }
+  }
+
+  // Fallback/standard font sizing for single-line labels
+  if (lines.length === 1) {
+    if (label.length > 30) {
+       fontSize = 8;
+    } else if (label.length > 25) {
+       fontSize = 9;
+    }
   }
   
-  text.textContent = label;
+  text.setAttribute("font-size", fontSize);
 
-  const ty = labelBelow ? (barsY + barsH + 14) : (cfg.y + 14);
+  // Text Y position: Position text exactly 14px (font size + buffer) down from the top of the zone.
+  const ty = cfg.y + 14; 
   text.setAttribute("x", cfg.x);
   text.setAttribute("y", ty);
 
+  // Append lines using <tspan>
+  lines.forEach((line, index) => {
+    const tspan = document.createElementNS("http://www.w3.org/2000/svg", "tspan");
+    tspan.textContent = line;
+    tspan.setAttribute("x", cfg.x); // Align left
+    // Drop down by 1.1em (slightly more than font size) for the second line
+    if (index > 0) tspan.setAttribute("dy", `${fontSize * 1.1}px`); 
+    text.appendChild(tspan);
+  });
+  // --- END: MODIFIED WRAPPING/FONT SIZE LOGIC ---
+  
   g.appendChild(text);
 }
 
@@ -523,7 +566,7 @@ function populateProducts(){
  * [MODIFIED] generate
  * - Calls new setFluidColor
  * - Calls new placeBarcode (with new coordinates)
- * - All payload logic is UNCHANGED.
+ * - UPDATED: Expiry Date payload to match user's custom format: a2 + YYYJJJ + 4a.
  */
 function generate(){
   // Product
@@ -564,7 +607,7 @@ function generate(){
   const bStyle = bSel.selectedOptions[0].dataset.style;
   const bloodPayload = "=%" + bSel.value;
 
-  // Expiry (UNCHANGED)
+  // Expiry 
   let d = null;
   const pp = $("expiry").value;
   if(pp){
@@ -575,7 +618,12 @@ function generate(){
     return;
   }
   $("expiry-error").textContent = "";
+  
+  // --- START: EXPIRY PAYLOAD MODIFIED FOR CUSTOM FORMAT ---
+  // The user requested a Codabar format, but this generator uses Code-128.
+  // We are implementing the requested payload string (a2 + YYYJJJ + 4a) using the existing Code-128 encoder.
   const expiryPayload = "a2" + last3(d.getFullYear()) + julian(d) + "4a";
+  // --- END: EXPIRY PAYLOAD MODIFIED FOR CUSTOM FORMAT ---
 
   // Draw the barcodes (UNCHANGED logic, but new layout)
   placeBarcode("donation", donationPayload, base + chk.chk, false);
@@ -715,16 +763,21 @@ function downloadPNG(){
 /* ====================== Preview Zoom ====================== */
 let previewZoom = 1;
 const ZOOM_MIN = 0.5;
-const ZOOM_MAX = 2.0;
+// UPDATED: Increased max zoom to 4.0 (400%)
+const ZOOM_MAX = 4.0; 
 const ZOOM_STEP = 0.25;
 
 function applyZoom(){
   const wrapper = document.querySelector(".blood-bag-wrapper");
-  const pct = $("zoomPercent");
+  // UPDATED: Reference the input field
+  const pctInput = $("zoomPercent");
   if(!wrapper) return;
   wrapper.style.transformOrigin = "center center";
   wrapper.style.transform = `scale(${previewZoom})`;
-  if(pct) pct.textContent = Math.round(previewZoom * 100) + "%";
+  if(pctInput) {
+    // UPDATED: Set the input's value
+    pctInput.value = Math.round(previewZoom * 100) + "%";
+  }
 }
 
 function setZoom(value){
@@ -736,9 +789,30 @@ function initZoomControls(){
   applyZoom();
   const zoomInBtn = $("zoomIn");
   const zoomOutBtn = $("zoomOut");
+  const pctInput = $("zoomPercent");
   const shell = document.querySelector(".preview-shell");
+  
+  // FIX: Ensure zoomOut button is subtracting the step
   if(zoomInBtn) zoomInBtn.onclick = () => setZoom(previewZoom + ZOOM_STEP);
-  if(zoomOutBtn) zoomOutBtn.onclick = () => setZoom(previewZoom - ZOOM_STEP);
+  if(zoomOutBtn) zoomOutBtn.onclick = () => setZoom(previewZoom - ZOOM_STEP); 
+
+  // NEW: Add manual input handler
+  if(pctInput){
+    pctInput.onchange = function(){
+        // Remove non-numeric characters except '.'
+        const raw = this.value.replace(/[^0-9.]/g, ''); 
+        let pct = parseFloat(raw);
+        
+        // Enforce bounds (50% to 400%)
+        if(isNaN(pct) || pct < 50) pct = 50; 
+        if(pct > 400) pct = 400; 
+        
+        // Apply the zoom scale (Percentage / 100)
+        setZoom(pct / 100); 
+    };
+  }
+  
+  // Existing double-click/tap behaviour
   if(shell){
     shell.addEventListener("click", e => {
       if(!e.target.closest(".blood-bag-wrapper")) return;

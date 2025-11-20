@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Blood component barcode generator</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0b0c0f; --panel:#11131a; --card:#171a23;
+    --text:#e5e7eb; --muted:#9aa3b2; --accent:#8b5cf6;
+    --err:#ef4444; --ok:#22c55e;
+
+    /* --- NEW CSS BLOOD BAG VARS --- */
+    --blood-red: #8a0e0e;
+    /* Added yellow from old SVG gradient */
+    --blood-yellow: #f2c133; 
+    --port-grey: #b0b0b0;
+    --label-white: #ffffff;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    /* Use Inter font from new file */
+    font:14px/1.35 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    display:grid; grid-template-columns:420px 1fr; gap:16px;
+    min-height:100vh; padding:16px;
+  }
+  header{ grid-column:1/-1; display:flex; gap:10px; align-items:center }
+  h1{ font-size:20px; margin:0 }
+
+  .left{
+    background:var(--panel); border-radius:16px; padding:16px;
+    display:flex; flex-direction:column; gap:14px;
+  }
+  .group{ background:var(--card); border-radius:12px; padding:12px }
+  label{ display:block; font-size:12px; margin:6px 0 }
+  input,select{
+    width:100%; padding:8px 10px; border-radius:8px;
+    border:1px solid #262b3d; background:#0e1119; color:var(--text);
+  }
+  .row{ display:grid; grid-template-columns:2fr 1fr; gap:8px; align-items:end }
+  .actions{ display:flex; flex-wrap:wrap; gap:10px }
+  button{
+    padding:10px 12px; border-radius:10px; border:1px solid #303548;
+    background:#1b2032; color:#e5e7eb; cursor:pointer;
+    font-family: 'Inter', system-ui; /* Use Inter font */
+  }
+  button.primary{ background:var(--accent); border-color:#7c3aed }
+  button.success{ background:var(--ok); border-color:#16a34a; color:#04130a }
+  .right{
+    background:#080a10; border-radius:16px; padding:16px;
+    display:flex; flex-direction:column; gap:10px;
+  }
+  .preview-shell{
+    display:flex; justify-content:center; align-items:center;
+    background:#0a0d14; border:1px dashed #2a3044;
+    border-radius:12px; height:70vh; overflow:auto;
+    /* Added padding for the new bag */
+    padding: 40px;
+  }
+  .zoom-controls{
+    margin-top:8px;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    gap:8px;
+    font-size:12px;
+    color:var(--muted);
+  }
+  
+  /* UPDATED: Styles for the new zoom input field */
+  .zoom-percent { 
+    padding:4px 6px; 
+    border-radius:6px;
+    border:1px solid #262b3d; 
+    background:#0e1119; 
+    color:var(--text);
+    min-width: 60px; /* Increased width to accommodate 3 digits + '%' */
+    text-align: center;
+    font-size: 12px;
+    height: 36px; /* Match button height */
+    box-sizing: border-box;
+    display: flex; /* Makes it act like a flex item */
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .zoom-btn{ padding:6px 10px; font-size:12px; }
+  .error{ color:var(--err); font-size:12px; min-height:1.2em }
+  .mono{ font-family:ui-monospace,Consolas,monospace }
+  
+  /* Original SVG text styles, still needed for the SVG overlay */
+  .labelText{ font:700 10px/1 Inter,Arial; fill:#111 }
+  /* Make 'outline' style visually identical (no shadow/bold effect) */
+  .labelText.outline{ fill:#111; stroke:none; stroke-width:0 }
+  
+  small.hint{ color:var(--muted); display:block; margin-top:6px }
+  
+  /* --- START: NEW CSS BLOOD BAG STYLES --- */
+  
+  /* Wrapper to hold all the parts together */
+  .blood-bag-wrapper {
+      position: relative;
+      width: 400px;
+      height: 450px;
+      /* Add a filter for a subtle shadow */
+      filter: drop-shadow(0 4px 10px rgba(0,0,0,0.15));
+      /* Ensure it scales down nicely */
+      max-width: 100%;
+      flex-shrink: 0; /* Prevents shrinking in flex container */
+      /* Shared color token for all bag pieces */
+      --bag-color: var(--blood-red);
+  }
+  
+  /* The main bag body */
+  .blood-bag-body {
+      width: 100%;
+      height: 100%;
+      background-color: var(--bag-color);
+      /* Create the rounded corners */
+      border-radius: 40px 40px 60px 60px;
+      position: absolute;
+      bottom: 0;
+      z-index: 2; /* Sits above the grey ports */
+      transition: background-color 0.3s ease;
+  }
+  
+  /* Class to toggle for yellow products */
+  .blood-bag-body.is-yellow {
+      background-color: var(--blood-yellow);
+  }
+  
+  /* The white label in the center */
+  .blood-bag-label {
+      position: absolute;
+      width: 340px;
+      height: 280px;
+      background-color: var(--label-white);
+      border-radius: 20px;
+      z-index: 3; /* On top of the bag body */
+      
+      /* Center the label */
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -55%);
+      margin-top: 20px; /* Nudge it down a bit */
+      
+      box-sizing: border-box;
+      /* CRITICAL: Must be relative for the SVG overlay */
+      position: relative;
+  }
+  
+  /* The two short bag-colored ports in the middle */
+  .port-center-left,
+  .port-center-right {
+      position: absolute;
+      width: 25px;
+      height: 30px;
+      background-color: var(--bag-color); 
+      z-index: 3; /* On top of the bag body */
+      top: -30px; 
+      border-radius: 5px 5px 0 0; 
+  }
+  
+  .port-center-left {
+      left: 150px;
+  }
+  
+  .port-center-right {
+      right: 150px;
+  }
+
+  /* The two tall grey ports on the outside */
+  .port-outer-left,
+  .port-outer-right {
+      position: absolute;
+      width: 35px;
+      height: 50px;
+      background-color: var(--port-grey);
+      z-index: 1; /* Behind the bag */
+      top: -50px;
+      border-radius: 10px 10px 0 0;
+  }
+  
+  .port-outer-left {
+      left: 60px;
+  }
+  
+  .port-outer-right {
+      right: 60px;
+  }
+  
+  /* --- END: NEW CSS BLOOD BAG STYLES --- */
+
+</style>
+</head>
+<body>
+<header>
+  <h1>Blood component barcode generator</h1>
+</header>
+
+<aside class="left">
+  <div class="group">
+    <label for="product">Product</label>
+    <select id="product"></select>
+  </div>
+
+  <div class="group">
+    <label>Donation / Unit Number</label>
+    <div class="row">
+      <input id="donation" type="text" placeholder="G072425123456 or G072425123456S" class="mono"/>
+      <div style="font-size:18px;color:var(--muted);">
+      <span id="donationChk" class="mono">–</span>
+      </div>
+    </div>
+    <div id="donation-error" class="error"></div>
+    <small class="hint">
+      Type the donation number without the check character. It will be auto-calculated.
+    </small>
+  </div>
+
+  <div class="group">
+    <label>Blood Group</label>
+    <select id="blood">
+      <option value="5100" data-text="O RhD Positive" data-style="solid">O RhD Positive</option>
+      <option value="9500" data-text="O RhD Negative" data-style="outline">O RhD Negative</option>
+      <option value="6200" data-text="A RhD Positive" data-style="solid">A RhD Positive</option>
+      <option value="0600" data-text="A RhD Negative" data-style="outline">A RhD Negative</option>
+      <option value="7300" data-text="B RhD Positive" data-style="solid">B RhD Positive</option>
+      <option value="1700" data-text="B RhD Negative" data-style="outline">B RhD Negative</option>
+      <option value="8400" data-text="AB RhD Positive" data-style="solid">AB RhD Positive</option>
+      <option value="2800" data-text="AB RhD Negative" data-style="outline">AB RhD Negative</option>
+    </select>
+  </div>
+
+  <div class="group">
+    <label>Expiry Date</label>
+    <input id="expiry" type="date" inputmode="numeric"/>
+    <div id="expiry-error" class="error"></div>
+    <small class="hint">Enter the expiry date in the format DD/MM/YYYY or select using the calendar</small>
+  </div>
+
+  <div class="actions">
+    <button id="generate" class="primary">Generate</button>
+    <button id="dlPng">Download PNG</button>
+  </div>
+
+  <div style="margin-top: auto; font-size: 12px; color: var(--muted); padding-top: 16px;">
+    <a href="https://onlycells.co.uk/blood-component-barcode-generator/" style="color: var(--accent); display: block; margin-bottom: 6px;">Instructions for Use</a>
+    For any feedback or suggestions contact <a href="mailto:anas@onlycells.co.uk" style="color: var(--accent);">anas@onlycells.co.uk</a>
+    <br>
+    Only Cells LTD © 2025
+  </div>
+  </aside>
+
+<main class="right">
+  <div class="preview-shell">
+    
+    <div class="blood-bag-wrapper">
+        <div class="port-outer-left"></div>
+        <div class="port-outer-right"></div>
+        
+        <div class="blood-bag-body" id="css-bag-body"></div>
+        
+        <div class="port-center-left"></div>
+        <div class="port-center-right"></div>
+        
+        <div class="blood-bag-label" id="css-bag-label">
+            
+            <svg id="barcode-overlay" 
+                 xmlns="http://www.w3.org/2000/svg"
+                 viewBox="0 0 340 280" 
+                 preserveAspectRatio="xMidYMid meet" 
+                 style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; background:transparent;">
+                
+                <g id="zoneDonation"></g>
+                <g id="zoneProduct"></g>
+                <g id="zoneBlood"></g>
+                <g id="zoneExpiry"></g>
+            </svg>
+            
+        </div>
+    </div>
+    </div>
+  <div class="zoom-controls">
+    <button id="zoomOut" type="button" class="zoom-btn">◀</button>
+    <input id="zoomPercent" class="zoom-percent mono" type="text" value="100%"/>
+    <button id="zoomIn" type="button" class="zoom-btn">▶</button>
+  </div>
+</main>
+
+<canvas id="scratch" style="display:none"></canvas>
+
+<script>
+/* ====================== SPN223 Appendix 4 Catalogue ====================== */
+/* (Unchanged) */
+const CATALOGUE_FULL = [
+  // --- Core red cell products ---
+  { name: "Red Cells in Additive Solution, LD",                                    barcode: "a0043333b", fluid: "red" },
+  { name: "Red Cells in Additive Solution, LD, Irradiated",                       barcode: "a0443333b", fluid: "red" },
+  { name: "Red Cells Thawed and Washed, LD",                                      barcode: "a0064603b", fluid: "red" },
+  { name: "Red Cells Thawed and Washed, LD (Closed System Preparation)",          barcode: "a0542633b", fluid: "red" },
+  { name: "Red Cells, Washed, LD (Manual wash in SAGM)",                          barcode: "a0465313b", fluid: "red" },
+  { name: "Red Cells, Washed, LD, Irradiated (Manual wash in SAGM)",              barcode: "a0465323b", fluid: "red" },
+  // --- Platelets, Apheresis, LD ---
+  { name: "Platelets, Apheresis, LD — Single unit",                               barcode: "a0542883b", fluid: "yellow" },
+  { name: "Platelets, Apheresis, LD — Pack 1",                                    barcode: "a0542893b", fluid: "yellow" },
+  { name: "Platelets, Apheresis, LD — Pack 2",                                    barcode: "a0542903b", fluid: "yellow" },
+  { name: "Platelets, Apheresis, LD — Pack 3",                                    barcode: "a0542913b", fluid: "yellow" },
+  // --- Platelets, Apheresis, LD, Irradiated ---
+  { name: "Platelets, Apheresis, LD, Irradiated — Single unit",                   barcode: "a0542923b", fluid: "yellow" },
+  { name: "Platelets, Apheresis, LD, Irradiated — Pack 1",                        barcode: "a0542933b", fluid: "yellow" },
+  { name: "Platelets, Apheresis, LD, Irradiated — Pack 2",                        barcode: "a0542943b", fluid: "yellow" },
+  { name: "Platelets, Apheresis, LD, Irradiated — Pack 3",                        barcode: "a0542953b", fluid: "yellow" },
+  // --- Platelets Apheresis in Additive Solution, LD ---
+  { name: "Platelets Apheresis in Additive Solution, LD — Pack 1",                barcode: "a0542433b", fluid: "yellow" },
+  { name: "Platelets Apheresis in Additive Solution, LD — Pack 2",                barcode: "a0542443b", fluid: "yellow" },
+  { name: "Platelets Apheresis in Additive Solution, LD — Pack 3",                barcode: "a0542453b", fluid: "yellow" },
+  { name: "Platelets Apheresis in Additive Solution, LD — Single unit",           barcode: "a0542463b", fluid: "yellow" },
+  // --- Platelets Apheresis in Additive Solution, LD, Irradiated ---
+  { name: "Platelets Apheresis in Additive Solution, LD, Irradiated — Pack 1",    barcode: "a0542333b", fluid: "yellow" },
+  { name: "Platelets Apheresis in Additive Solution, LD, Irradiated — Pack 2",    barcode: "a0542343b", fluid: "yellow" },
+  { name: "Platelets Apheresis in Additive Solution, LD, Irradiated — Pack 3",    barcode: "a0542353b", fluid: "yellow" },
+  { name: "Platelets Apheresis in Additive Solution, LD, Irradiated — Pack 4",    barcode: "a0542363b", fluid: "yellow" },
+  { name: "Platelets Apheresis in Additive Solution, LD, Irradiated — Pack 5",    barcode: "a0542373b", fluid: "yellow" },
+  { name: "Platelets Apheresis in Additive Solution, LD, Irradiated — Pack 6",    barcode: "a0542383b", fluid: "yellow" },
+  { name: "Platelets Apheresis in Additive Solution, LD, Irradiated — Pack 7",    barcode: "a0542393b", fluid: "yellow" },
+  { name: "Platelets Apheresis in Additive Solution, LD, Irradiated — Pack 8",    barcode: "a0542403b", fluid: "yellow" },
+  // --- Platelets Pooled in Additive Solution and Plasma, LD ---
+  { name: "Platelets Pooled in Additive Solution and Plasma, LD",                 barcode: "a0544773b", fluid: "yellow" },
+  { name: "Platelets Pooled in Additive Solution and Plasma, LD, Irradiated",     barcode: "A0544783b", fluid: "yellow" },
+  // --- Fresh Frozen Plasma, LD (adult) ---
+  { name: "Fresh Frozen Plasma, LD — Whole blood",                                barcode: "a0183003b", fluid: "yellow" },
+  { name: "Fresh Frozen Plasma, LD — Single unit",                                barcode: "a0183203b", fluid: "yellow" },
+  { name: "Fresh Frozen Plasma, LD — Pack 1",                                     barcode: "a0183213b", fluid: "yellow" },
+  { name: "Fresh Frozen Plasma, LD — Pack 2",                                     barcode: "a0183223b", fluid: "yellow" },
+  // --- Cryoprecipitate, pooled ---
+  { name: "Cryoprecipitate, Pooled, LD",                                          barcode: "a0101903b", fluid: "yellow" },
+  // --- Red cells for special use (IUT / neonatal / exchange) ---
+  { name: "Red Cells, CPD, LD, Irradiated, for Intrauterine Transfusion",         barcode: "a0400183b", fluid: "red" },
+  { name: "Red Cells in Additive Solution, LD for Neonatal Use — Pack 1",         barcode: "a0568303b", fluid: "red" },
+  { name: "Red Cells in Additive Solution, LD for Neonatal Use — Pack 2",         barcode: "a0568313b", fluid: "red" },
+  { name: "Red Cells in Additive Solution, LD for Neonatal Use — Pack 3",         barcode: "a0568323b", fluid: "red" },
+  { name: "Red Cells in Additive Solution, LD for Neonatal Use — Pack 4",         barcode: "a0568333b", fluid: "red" },
+  { name: "Red Cells in Additive Solution, LD for Neonatal Use — Pack 5",         barcode: "a0568343b", fluid: "red" },
+  { name: "Red Cells in Additive Solution, LD for Neonatal Use — Pack 6",         barcode: "a0568353b", fluid: "red" },
+  { name: "Red Cells in Additive Solution, LD, Irradiated, for Neonatal Use — Pack 1", barcode: "a0468303b", fluid: "red" },
+  { name: "Red Cells in Additive Solution, LD, Irradiated, for Neonatal Use — Pack 2", barcode: "a0468313b", fluid: "red" },
+  { name: "Red Cells in Additive Solution, LD, Irradiated, for Neonatal Use — Pack 3", barcode: "a0468323b", fluid: "red" },
+  { name: "Red Cells in Additive Solution, LD, Irradiated, for Neonatal Use — Pack 4", barcode: "a0468333b", fluid: "red" },
+  { name: "Red Cells in Additive Solution, LD, Irradiated, for Neonatal Use — Pack 5", barcode: "a0468343b", fluid: "red" },
+  { name: "Red Cells in Additive Solution, LD, Irradiated, for Neonatal Use — Pack 6", barcode: "a0468353b", fluid: "red" },
+  { name: "Red Cells (CPD), LD, Irradiated for Exchange Transfusion",             barcode: "a0403503b", fluid: "red" },
+  { name: "Red Cells in Additive Solution, LD for Neonates and Infants",          barcode: "a0544813b", fluid: "red" },
+  { name: "Red Cells in Additive Solution, LD, Irradiated for Neonates and Infants", barcode: "a0544823b", fluid: "red" },
+  // --- Platelets / plasma / cryo for neonatal & infant use ---
+  { name: "Platelets, Hyperconcentrated, Irradiated, for Neonatal Use",          barcode: "a0429643b", fluid: "yellow" },
+  { name: "Platelets in Plasma and Additive Solution, LD for Neonatal Use — Pack 1", barcode: "a0300313b", fluid: "yellow" },
+  { name: "Platelets in Plasma and Additive Solution, LD for Neonatal Use — Pack 2", barcode: "A0300323b", fluid: "yellow" },
+  { name: "Platelets in Plasma and Additive Solution, LD for Neonatal Use — Pack 3", barcode: "A0300333b", fluid: "yellow" },
+  { name: "Platelets in Plasma and Additive Solution, LD for Neonatal Use — Pack 4", barcode: "A0300343b", fluid: "yellow" },
+  { name: "Platelets in Plasma and Additive Solution, LD for Neonatal Use — Pack 5", barcode: "A0300353b", fluid: "yellow" },
+  { name: "Platelets in Plasma and Additive Solution, LD for Neonatal Use — Pack 6", barcode: "A0300363b", fluid: "yellow" },
+  { name: "Platelets in Plasma and Additive Solution, LD for Neonatal Use — Pack 7", barcode: "A0300373b", fluid: "yellow" },
+  { name: "Platelets in Plasma and Additive Solution, LD for Neonatal Use — Pack 8", barcode: "A0300383b", fluid: "yellow" },
+  { name: "Platelets in Plasma and Additive Solution, LD Irradiated, for Neonatal Use — Pack 1", barcode: "A0300513b", fluid: "yellow" },
+  { name: "Platelets in Plasma and Additive Solution, LD Irradiated, for Neonatal Use — Pack 2", barcode: "A0300523b", fluid: "yellow" },
+  { name: "Platelets in Plasma and Additive Solution, LD Irradiated, for Neonatal Use — Pack 3", barcode: "A0300533b", fluid: "yellow" },
+  { name: "Platelets in Plasma and Additive Solution, LD Irradiated, for Neonatal Use — Pack 4", barcode: "A0300543b", fluid: "yellow" },
+  { name: "Platelets in Plasma and Additive Solution, LD Irradiated, for Neonatal Use — Pack 5", barcode: "A0300553b", fluid: "yellow" },
+  { name: "Platelets in Plasma and Additive Solution, LD Irradiated, for Neonatal Use — Pack 6", barcode: "A0300563b", fluid: "yellow" },
+  { name: "Platelets in Plasma and Additive Solution, LD Irradiated, for Neonatal Use — Pack 7", barcode: "A0300573b", fluid: "yellow" },
+  { name: "Platelets in Plasma and Additive Solution, LD Irradiated, for Neonatal Use — Pack 8", barcode: "A0300583b", fluid: "yellow" },
+  { name: "Fresh Frozen Plasma, LD for Neonatal Use — Pack 1",                   barcode: "A0696013b", fluid: "yellow" },
+  { name: "Fresh Frozen Plasma, LD for Neonatal Use — Pack 2",                   barcode: "A0696023b", fluid: "yellow" },
+  { name: "Fresh Frozen Plasma, LD for Neonatal Use — Pack 3",                   barcode: "A0696033b", fluid: "yellow" },
+  { name: "Fresh Frozen Plasma, LD for Neonatal Use — Pack 4",                   barcode: "A0696043b", fluid: "yellow" },
+  { name: "Fresh Frozen Plasma, LD for Neonatal Use — Pack 5",                   barcode: "A0597113b", fluid: "yellow" },
+  { name: "Fresh Frozen Plasma, LD for Neonatal Use — Pack 6",                   barcode: "A0597123b", fluid: "yellow" },
+  { name: "Fresh Frozen Plasma, LD for Neonatal Use — Pack 7",                   barcode: "A0597133b", fluid: "yellow" },
+  { name: "Fresh Frozen Plasma, LD for Neonatal Use — Pack 8",                   barcode: "A0597143b", fluid: "yellow" },
+  { name: "Fresh Frozen Plasma, LD for Neonatal Use — Pack 9",                   barcode: "A0597153b", fluid: "yellow" },
+  { name: "Fresh Frozen Plasma, LD for Neonatal Use — Pack 10",                  barcode: "A0597163b", fluid: "yellow" },
+  { name: "Fresh Frozen Plasma, LD for Neonatal Use — Pack 11",                  barcode: "A0597173b", fluid: "yellow" },
+  { name: "Fresh Frozen Plasma, LD for Neonatal Use — Pack 12",                  barcode: "A0597183b", fluid: "yellow" },
+  { name: "Cryoprecipitate, LD for Neonatal Use",                                barcode: "A0299813b", fluid: "yellow" },
+  // --- Granulocytes ---
+  { name: "Granulocytes, Pooled, in Additive Solution/Plasma Mix, Irradiated",   barcode: "a0543953b", fluid: "yellow" },
+];
+
+/* ====================== ISO/IEC 7064 MOD 37-2 ====================== */
+/* (Unchanged) */
+function charVal(c){
+  c = c.toUpperCase().charCodeAt(0);
+  if (c >= 48 && c <= 57) return c - 48;      // 0-9
+  if (c >= 65 && c <= 90) return c - 55;      // A-Z => 10-35
+  return null;
+}
+function valToChar(v){
+  if (v === 36) return "*"; // Handle the asterisk case
+  return v < 10 ? String.fromCharCode(48 + v)   // 0-9
+                : String.fromCharCode(55 + v);  // 10-35 (A-Z)
+}
+function iso7064(str){
+  str = (str || "").replace(/\s+/g, "").toUpperCase();
+  if (!/^[A-Z0-9]+$/.test(str)){
+    return { ok:false, err:"Only A–Z and 0–9 allowed" };
+  }
+  // Use BigInt for calculations to prevent potential overflow with long strings,
+  // as the intermediate sum can get very large.
+  let sum = 0n; 
+  for (const ch of str){
+    const v = BigInt(charVal(ch));
+    sum = (sum + v) * 2n;
+  }
+  const mod37Val = sum % 37n;
+  const subtractedVal = 38n - mod37Val;
+  const checkVal = subtractedVal % 37n;
+  
+  // Convert the final BigInt result back to a Number to use in valToChar
+  return { ok:true, chk:valToChar(Number(checkVal)) };
+}
+function flagDigits(ch){
+  const v = charVal(ch); // e.g., 'G' -> 16
+  const flagValue = v + 60; // e.g., 16 + 60 = 76
+  return String(flagValue); // Returns "76"
+}
+
+/* ====================== Date helpers ====================== */
+/* (Unchanged) */
+function parseDDMMYY(t){
+  const m = String(t||"").trim().match(/^(\d{2})\/(\d{2})\/(\d{2})$/);
+  if (!m) return null;
+  const dd = +m[1], mm = +m[2], yy = +m[3];
+  const y = yy <= 79 ? 2000 + yy : 1900 + yy;
+  const d = new Date(y, mm-1, dd);
+  return (d.getFullYear()===y && d.getMonth()+1===mm && d.getDate()===dd) ? d : null;
+}
+function last3(y){ return String(y % 1000).padStart(3,"0"); }
+function julian(d){
+  const s = new Date(d.getFullYear(),0,1);
+  return String(Math.floor((d - s)/86400000)+1).padStart(3,"0");
+}
+
+/* ====================== Code-128 (Set B) ====================== */
+/* (Unchanged) */
+const PAT=["212222","222122","222221","121223","121322","131222","122213","122312","132212","221213","221312","231212","112232","122132","122231","113222","123122","123221","223211","221132","221231","213212","223112","312131","311222","321122","321221","312212","322112","322211","212123","212321","232121","111323","131123","131321","112313","132113","132311","211313","231113","231311","112133","112331","132131","113123","113321","133121","313121","211331","231131","213113","213311","213131","311123","311321","331121","312113","312311","332111","314111","221411","431111","111224","111422","121124","121421","141122","141221","112214","112412","122114","122411","142112","142211","241211","221114","413111","241112","134111","111242","121142","121241","114212","124112","124211","411212","421112","421211","212141","214121","412121","111143","111341","131141","114113","114311","411113","411311","113141","114131","311141","411131","211412","211214","211232","2331112"];
+function enc128B(s){
+  const out=[];
+  for(const ch of s){
+    const c=ch.charCodeAt(0);
+    if(c<32||c>126) throw Error("Code128B supports ASCII 32..126");
+    out.push(c-32);
+  }
+  return out;
+}
+function cksum(codes,start){
+  let s=start;
+  for(let i=0;i<codes.length;i++) s+=codes[i]*(i+1);
+  return s%103;
+}
+function drawCode128ToSVG(g, text, width, height){
+  while(g.firstChild) g.removeChild(g.firstChild);
+  const start=104;
+  const data=enc128B(text);
+  const sum=cksum(data,start);
+  const seq=[start,...data,sum,106];
+  const modules=[];
+  seq.forEach(v=>PAT[v].split("").forEach(n=>modules.push(+n)));
+  const quietMods=10;
+  const totalMods=modules.reduce((a,b)=>a+b,0)+quietMods*2;
+  const modW=width/totalMods;
+  let x=quietMods*modW;
+  let bar=true;
+  for(const m of modules){
+    const w=m*modW;
+    if(bar){
+      const r=document.createElementNS("http://www.w3.org/2000/svg","rect");
+      r.setAttribute("x",x);
+      r.setAttribute("y",0);
+      r.setAttribute("width",w);
+      r.setAttribute("height",height);
+      r.setAttribute("fill","#000");
+      g.appendChild(r);
+    }
+    x+=w;
+    bar=!bar;
+  }
+}
+
+/* ====================== Helpers ====================== */
+function $(id){ return document.getElementById(id); }
+
+/**
+ * [MODIFIED] setFluidColor
+ * This function now toggles a CSS class on the .blood-bag-body element
+ * instead of changing an SVG fill attribute.
+ */
+function setFluidColor(kind){
+  const body = $("css-bag-body");
+  if(!body) return; // safety check
+  
+  const wrapper = body.closest('.blood-bag-wrapper');
+  const tone = (kind === "yellow") ? "var(--blood-yellow)" : "var(--blood-red)";
+
+  // Keep body class for backwards compatibility / transitions
+  body.classList.toggle("is-yellow", kind === "yellow");
+  
+  // Sync CSS var so siblings (ports) and downloads share the same color
+  if(wrapper) {
+    wrapper.style.setProperty("--bag-color", tone);
+  }
+}
+
+/**
+ * [MODIFIED] placeBarcode
+ * - Barcode height is reduced by increasing the reserved space for the label.
+ * - Text wrapping logic for the 'product' field is introduced to prevent overlap on long names.
+ */
+function placeBarcode(zoneId, payload, label, labelBelow = false, outline = false) {
+  
+  // [NEW] Layout relative to the 340x280 SVG overlay
+  // Padding: 5px top/left/right. Usable width = 330.
+  // Col 1 (Donation/Product): 210px wide
+  // Col 2 (Blood/Expiry): 110px wide
+  // Gap: 10px
+  // Total: 210 + 10 + 110 = 330.
+  const zones = {
+    // Top row, y=15
+    donation: { x: 5,   y: 15, w: 210, h: 110 },
+    blood:    { x: 225, y: 15, w: 110, h: 110 },
+    // Bottom row, y=145 (15 + 110 + 20 gap)
+    product:  { x: 5,   y: 145, w: 210, h: 120 },
+    expiry:   { x: 225, y: 145, w: 110, h: 120 }
+  };
+
+  const cfg = zones[zoneId];
+  if (!cfg) return;
+
+  const g = $("zone" + zoneId[0].toUpperCase() + zoneId.slice(1));
+  while (g.firstChild) g.removeChild(g.firstChild);
+  
+  if (!payload && !label) return;
+
+  // INCREASED labelBand to 30 to reserve more space for the label, especially for 2 lines
+  const labelBand = 30; 
+  const gap = 4;        
+  // Reduced effective bar height to give space for the label above.
+  let barsH = Math.max(24, cfg.h - (labelBand + gap)); 
+  let barsY = labelBelow ? cfg.y : (cfg.y + labelBand + gap);
+  
+  if (payload) {
+    const bars = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    bars.setAttribute("transform", `translate(${cfg.x},${barsY})`);
+    // Use 98% of zone width for bars for a snug fit
+    drawCode128ToSVG(bars, payload, cfg.w * 0.98, barsH);
+    g.appendChild(bars);
+  } else {
+    barsH = 0; 
+    barsY = labelBelow ? cfg.y : (cfg.y + 14);
+  }
+
+  const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+  if (outline) {
+    text.setAttribute("class", "labelText outline");
+    text.setAttribute("stroke", "#111");
+    text.setAttribute("stroke-width", "1.8");
+    text.setAttribute("fill", "#fff");
+  } else {
+    text.setAttribute("class", "labelText");
+    text.setAttribute("fill", "#111");
+  }
+  
+  text.setAttribute("font-weight", "700");
+  text.setAttribute("text-anchor", "start");
+
+  // --- START: MODIFIED WRAPPING/FONT SIZE LOGIC ---
+  let lines = [label];
+  let fontSize = 10;
+  
+  // Custom wrapping logic for product name (which is in the wider zone)
+  if (zoneId === 'product' && label.length > 20) {
+      // Try to find a space near the center for a split
+      const idealSplit = Math.ceil(label.length / 2);
+      let splitIndex = -1;
+      
+      const spaceBefore = label.lastIndexOf(' ', idealSplit);
+      const spaceAfter = label.indexOf(' ', idealSplit);
+
+      // Prefer a split point that is close to the middle (within 8 characters)
+      if (spaceBefore !== -1 && (idealSplit - spaceBefore) <= 8) {
+          splitIndex = spaceBefore;
+      } else if (spaceAfter !== -1 && spaceAfter !== -1 && (spaceAfter - idealSplit) <= 8) {
+          splitIndex = spaceAfter;
+      }
+      
+      if (splitIndex > 0) {
+          // Successfully split into two lines
+          lines = [label.substring(0, splitIndex).trim(), label.substring(splitIndex + 1).trim()].filter(l => l.length > 0);
+          fontSize = 10; // Keep font size 10 for two lines
+      }
+  }
+
+  // Fallback/standard font sizing for single-line labels
+  if (lines.length === 1) {
+    if (label.length > 30) {
+       fontSize = 8;
+    } else if (label.length > 25) {
+       fontSize = 9;
+    }
+  }
+  
+  text.setAttribute("font-size", fontSize);
+
+  // Text Y position: Position text exactly 14px (font size + buffer) down from the top of the zone.
+  const ty = cfg.y + 14; 
+  text.setAttribute("x", cfg.x);
+  text.setAttribute("y", ty);
+
+  // Append lines using <tspan>
+  lines.forEach((line, index) => {
+    const tspan = document.createElementNS("http://www.w3.org/2000/svg", "tspan");
+    tspan.textContent = line;
+    tspan.setAttribute("x", cfg.x); // Align left
+    // Drop down by 1.1em (slightly more than font size) for the second line
+    if (index > 0) tspan.setAttribute("dy", `${fontSize * 1.1}px`); 
+    text.appendChild(tspan);
+  });
+  // --- END: MODIFIED WRAPPING/FONT SIZE LOGIC ---
+  
+  g.appendChild(text);
+}
+
+/* ====================== Compose + Wire-up ====================== */
+function populateProducts(){
+  const sel = $("product");
+  sel.innerHTML = "";
+  for(const p of CATALOGUE_FULL){
+    const opt = document.createElement("option");
+    opt.value = p.barcode;
+    opt.textContent = p.name;
+    opt.dataset.barcode = p.barcode;
+    opt.dataset.fluid = p.fluid;
+    sel.appendChild(opt);
+  }
+}
+
+/**
+ * [MODIFIED] generate
+ * - Calls new setFluidColor
+ * - Calls new placeBarcode (with new coordinates)
+ * - UPDATED: Expiry Date payload to match user's custom format: a2 + YYYJJJ + 4a.
+ */
+function generate(){
+  // Product
+  const opt = $("product").selectedOptions[0];
+  if(!opt) return;
+  const prodBarcode = opt.dataset.barcode;
+  const prodName = opt.textContent;
+  // This now toggles the CSS class on the div
+  setFluidColor(opt.dataset.fluid === "yellow" ? "yellow" : "red");
+
+  // Donation number (UNCHANGED)
+  const raw = ($("donation").value || "").trim().toUpperCase();
+  if(!raw || !/^[A-Z0-9]+$/.test(raw)){
+    $("donation-error").textContent = "Enter a donation number using only A–Z and 0–9.";
+    return;
+  }
+  let base = raw;
+  // if(raw.length >= 2){
+  //   const prefix = raw.slice(0, -1);
+  //   const last   = raw.slice(-1);
+  //   const chk1 = iso7064(prefix);
+  //   if(chk1.ok && chk1.chk === last){
+  //     base = prefix;
+  //   }
+  // }
+  const chk = iso7064(base);
+  if(!chk.ok){
+    $("donation-error").textContent = chk.err;
+    return;
+  }
+  $("donation-error").textContent = "";
+  $("donationChk").textContent = chk.chk;
+  const donationPayload = "=" + base.toLowerCase() + flagDigits(chk.chk);
+
+  // Blood group (UNCHANGED)
+  const bSel   = $("blood");
+  const bText  = bSel.selectedOptions[0].dataset.text;
+  const bStyle = bSel.selectedOptions[0].dataset.style;
+  const bloodPayload = "=%" + bSel.value;
+
+  // Expiry 
+  let d = null;
+  const pp = $("expiry").value;
+  if(pp){
+    d = new Date(pp + "T00:00:00");
+  }
+  if(!d || isNaN(d.getTime())){
+    $("expiry-error").textContent = "Enter a valid date (dd-mm-yyyy).";
+    return;
+  }
+  $("expiry-error").textContent = "";
+  
+  // --- START: EXPIRY PAYLOAD MODIFIED FOR CUSTOM FORMAT ---
+  // The user requested a Codabar format, but this generator uses Code-128.
+  // We are implementing the requested payload string (a2 + YYYJJJ + 4a) using the existing Code-128 encoder.
+  const expiryPayload = "a2" + last3(d.getFullYear()) + julian(d) + "4a";
+  // --- END: EXPIRY PAYLOAD MODIFIED FOR CUSTOM FORMAT ---
+
+  // Draw the barcodes (UNCHANGED logic, but new layout)
+  placeBarcode("donation", donationPayload, base + chk.chk, false);
+  placeBarcode("product",  prodBarcode,    prodName,       false);
+  placeBarcode("blood",    bloodPayload,   bText,          false, bStyle === "outline");
+
+  const dd = String(d.getDate()).padStart(2,"0");
+  const mm = String(d.getMonth()+1).padStart(2,"0");
+  const yyyy = d.getFullYear();
+  placeBarcode("expiry",   expiryPayload,  `Expiry ${dd}/${mm}/${yyyy}`, false);
+}
+
+/**
+ * [MODIFIED] downloadPNG
+ * This function now manually re-draws the CSS bag shape onto the
+ * canvas, then draws the barcode SVG on top, to create a
+ * complete image.
+ */
+function downloadPNG(){
+  const svg = $("barcode-overlay"); // The SVG with barcodes
+  const bagBody = $("css-bag-body");
+  
+  if(!svg || !bagBody) return;
+
+  // Get computed styles
+  const bagStyle = window.getComputedStyle(bagBody);
+  const bagColor = bagStyle.backgroundColor; // This will be 'rgb(R, G, B)'
+  const rootStyles = window.getComputedStyle(document.documentElement);
+  const portGrey = (rootStyles.getPropertyValue("--port-grey") || "#b0b0b0").trim();
+  const labelWhite = (rootStyles.getPropertyValue("--label-white") || "#ffffff").trim();
+  
+  const ser = new XMLSerializer();
+  const src = ser.serializeToString(svg);
+  const img = new Image();
+  // Create a data URL for the SVG
+  const url = URL.createObjectURL(new Blob([src],{type:"image/svg+xml;charset=utf-8"}));
+  
+  img.onload = function(){
+    const c = $("scratch"), ctx = c.getContext("2d");
+    
+    // Base canvas size on the CSS wrapper, scaled up for quality.
+    // CSS wrapper is 400x450. Let's triple it for 1200px width.
+    const scale = 3;
+    const bodyW = 400 * scale;
+    const bodyH = 450 * scale;
+    const labelW = 340 * scale;
+    const labelH = 280 * scale;
+
+    // We need to draw from the top. The ports are 50px high.
+    const topOffset = 50 * scale; // 150px
+    
+    // New canvas size
+    c.width = 1200; // wrapper width (400 * 3)
+    c.height = 1350 + topOffset; // wrapper height (450 * 3) + top ports (50 * 3)
+    
+    ctx.clearRect(0,0,c.width,c.height);
+    ctx.save();
+    // Add a light background to the canvas for visibility
+    ctx.fillStyle = "#f0f2f5"; // A light grey
+    ctx.fillRect(0,0,c.width,c.height);
+    
+    // --- Draw CSS shapes manually ---
+    
+    // 1. Outer Ports (grey)
+    ctx.fillStyle = portGrey;
+    ctx.beginPath();
+    if (ctx.roundRect) {
+      ctx.roundRect(60 * scale, 0, 35 * scale, 50 * scale, [10 * scale, 10 * scale, 0, 0]);
+    } else { // Fallback for older browsers
+      ctx.rect(60 * scale, 0, 35 * scale, 50 * scale);
+    }
+    ctx.fill();
+    ctx.beginPath();
+    if (ctx.roundRect) {
+      ctx.roundRect((400 - 60 - 35) * scale, 0, 35 * scale, 50 * scale, [10 * scale, 10 * scale, 0, 0]);
+    } else {
+      ctx.rect((400 - 60 - 35) * scale, 0, 35 * scale, 50 * scale);
+    }
+    ctx.fill();
+
+    // 2. Bag Body
+    ctx.fillStyle = bagColor; // Use the computed color
+    ctx.beginPath();
+    if (ctx.roundRect) {
+      ctx.roundRect(0, topOffset, bodyW, bodyH, [40 * scale, 40 * scale, 60 * scale, 60 * scale]);
+    } else {
+      ctx.rect(0, topOffset, bodyW, bodyH);
+    }
+    ctx.fill();
+    
+    // 3. Center Ports (bag color)
+    ctx.fillStyle = bagColor; // Same color as bag
+    ctx.beginPath();
+    if (ctx.roundRect) {
+      ctx.roundRect(150 * scale, topOffset - (30 * scale), 25 * scale, 30 * scale, [5 * scale, 5 * scale, 0, 0]);
+    } else {
+      ctx.rect(150 * scale, topOffset - (30 * scale), 25 * scale, 30 * scale);
+    }
+    ctx.fill();
+    ctx.beginPath();
+    if (ctx.roundRect) {
+      ctx.roundRect((400 - 150 - 25) * scale, topOffset - (30 * scale), 25 * scale, 30 * scale, [5 * scale, 5 * scale, 0, 0]);
+    } else {
+      ctx.rect((400 - 150 - 25) * scale, topOffset - (30 * scale), 25 * scale, 30 * scale);
+    }
+    ctx.fill();
+
+    // 4. White Label
+    const labelX = 30 * scale;
+    const labelY = topOffset + (bodyH / 2) - (labelH / 2) + (20 * scale);
+    ctx.fillStyle = labelWhite;
+    ctx.beginPath();
+    if (ctx.roundRect) {
+      ctx.roundRect(labelX, labelY, labelW, labelH, 20 * scale);
+    } else {
+      ctx.rect(labelX, labelY, labelW, labelH);
+    }
+    ctx.fill();
+    
+    // --- Draw the barcode SVG on top ---
+    // The SVG (img) has aspect ratio 340/280.
+    // We draw it exactly inside the white label.
+    ctx.drawImage(img, labelX, labelY, labelW, labelH);
+    
+    ctx.restore();
+    
+    // --- Export ---
+    const a = document.createElement("a");
+    a.href = c.toDataURL("image/png");
+    a.download = "blood-label.png"; // Keep original name
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+  img.src = url;
+}
+
+/* ====================== Preview Zoom ====================== */
+let previewZoom = 1;
+const ZOOM_MIN = 0.5;
+// UPDATED: Increased max zoom to 4.0 (400%)
+const ZOOM_MAX = 4.0; 
+const ZOOM_STEP = 0.25;
+
+function applyZoom(){
+  const wrapper = document.querySelector(".blood-bag-wrapper");
+  // UPDATED: Reference the input field
+  const pctInput = $("zoomPercent");
+  if(!wrapper) return;
+  wrapper.style.transformOrigin = "center center";
+  wrapper.style.transform = `scale(${previewZoom})`;
+  if(pctInput) {
+    // UPDATED: Set the input's value
+    pctInput.value = Math.round(previewZoom * 100) + "%";
+  }
+}
+
+function setZoom(value){
+  previewZoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, value));
+  applyZoom();
+}
+
+function initZoomControls(){
+  applyZoom();
+  const zoomInBtn = $("zoomIn");
+  const zoomOutBtn = $("zoomOut");
+  const pctInput = $("zoomPercent");
+  const shell = document.querySelector(".preview-shell");
+  
+  // FIX: Ensure zoomOut button is subtracting the step
+  if(zoomInBtn) zoomInBtn.onclick = () => setZoom(previewZoom + ZOOM_STEP);
+  if(zoomOutBtn) zoomOutBtn.onclick = () => setZoom(previewZoom - ZOOM_STEP); 
+
+  // NEW: Add manual input handler
+  if(pctInput){
+    pctInput.onchange = function(){
+        // Remove non-numeric characters except '.'
+        const raw = this.value.replace(/[^0-9.]/g, ''); 
+        let pct = parseFloat(raw);
+        
+        // Enforce bounds (50% to 400%)
+        if(isNaN(pct) || pct < 50) pct = 50; 
+        if(pct > 400) pct = 400; 
+        
+        // Apply the zoom scale (Percentage / 100)
+        setZoom(pct / 100); 
+    };
+  }
+  
+  // Existing double-click/tap behaviour
+  if(shell){
+    shell.addEventListener("click", e => {
+      if(!e.target.closest(".blood-bag-wrapper")) return;
+      if(previewZoom < ZOOM_MAX) setZoom(previewZoom + ZOOM_STEP);
+      else setZoom(1);
+    });
+  }
+}
+
+/* Initial setup */
+populateProducts();
+initZoomControls();
+
+// Optional: pre-fill example donation & date
+$("donation").value = "G072425123456";
+const today = new Date();
+$("expiry").value = today.toISOString().slice(0,10);
+
+$("generate").onclick = generate;
+$("dlPng").onclick = downloadPNG;
+
+// Try to open the native date picker
+$("expiry").addEventListener("focus", e => e.target.showPicker && e.target.showPicker());
+$("expiry").addEventListener("click", e => e.target.showPicker && e.target.showPicker());
+
+// First render
+generate();
+</script>
+</body>
+</html>
